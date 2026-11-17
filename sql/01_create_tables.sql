@@ -45,24 +45,19 @@ DROP SEQUENCE sq_party_member;
 DROP SEQUENCE sq_party_message;
 
 
--- 3. 회원 (손님 / 사장 / 관리자를 role 하나로 구분. 사장은 점주·본사를 owner_type 으로 구분)
+-- 3. 회원 (손님 / 사장 / 관리자를 role 하나로 구분. 사장은 전부 점주)
 CREATE TABLE member (
     member_id   NUMBER        NOT NULL,
     login_id    VARCHAR2(30)  NOT NULL,                     -- 영문·숫자
     password    VARCHAR2(60)  NOT NULL,                     -- BCrypt 해시 (항상 60자)
     nickname    VARCHAR2(60)  NOT NULL,                     -- 한글 20자
-    role        VARCHAR2(10)  NOT NULL,                     -- USER / OWNER / ADMIN
-    owner_type  VARCHAR2(10),                               -- 사장만: STORE(점주) / HQ(본사). 나머지는 NULL
+    role        VARCHAR2(10)  NOT NULL,                     -- USER(손님) / OWNER(사장 = 점주) / ADMIN
     status      VARCHAR2(10)  DEFAULT 'ACTIVE' NOT NULL,    -- ACTIVE / BANNED(정지)
     created_at  DATE          DEFAULT SYSDATE NOT NULL,
     CONSTRAINT member_pk            PRIMARY KEY (member_id),
     CONSTRAINT member_login_id_uk   UNIQUE (login_id),
     CONSTRAINT member_nickname_uk   UNIQUE (nickname),
     CONSTRAINT member_role_ck       CHECK (role IN ('USER', 'OWNER', 'ADMIN')),
-    -- 사장이면 owner_type 필수, 사장이 아니면 NULL. (IS NOT NULL 을 꼭 써야 함:
-    -- CHECK 는 NULL 비교 결과(UNKNOWN)를 위반으로 보지 않아서, IN 만 쓰면 NULL 이 통과됨)
-    CONSTRAINT member_owner_type_ck CHECK ((role = 'OWNER' AND owner_type IS NOT NULL AND owner_type IN ('STORE', 'HQ'))
-                                        OR (role <> 'OWNER' AND owner_type IS NULL)),
     CONSTRAINT member_status_ck     CHECK (status IN ('ACTIVE', 'BANNED'))
 );
 
@@ -74,23 +69,21 @@ CREATE TABLE genre (
     CONSTRAINT genre_name_uk UNIQUE (name)
 );
 
--- 5. 브랜드 (프랜차이즈. 본사 계정이 등록)
+-- 5. 브랜드 (프랜차이즈 이름 목록. 본사 계정은 없음)
 CREATE TABLE brand (
     brand_id    NUMBER        NOT NULL,
     name        VARCHAR2(90)  NOT NULL,                     -- 한글 30자
-    hq_id       NUMBER,                                     -- 본사 회원번호
     created_at  DATE          DEFAULT SYSDATE NOT NULL,
     CONSTRAINT brand_pk      PRIMARY KEY (brand_id),
-    CONSTRAINT brand_hq_fk   FOREIGN KEY (hq_id) REFERENCES member(member_id),
     CONSTRAINT brand_name_uk UNIQUE (name)
 );
 
 -- 6. 매장 (brand_id 가 NULL 이면 일반 매장)
---    수정 권한 : 점주는 owner_id = 나, 본사는 brand.hq_id = 나 인 매장
+--    수정 권한 : owner_id = 나 인 매장만
 CREATE TABLE store (
     store_id    NUMBER         NOT NULL,
     brand_id    NUMBER,                                     -- 프랜차이즈 브랜드. 일반 매장은 NULL
-    owner_id    NUMBER,                                     -- 점주 회원번호. 본사 직영·크롤링 매장은 NULL
+    owner_id    NUMBER,                                     -- 점주 회원번호. 관리자가 등록한 매장은 NULL
     name        VARCHAR2(150)  NOT NULL,                    -- 한글 50자
     area        VARCHAR2(30)   NOT NULL,                    -- 홍대 / 강남 / 건대 / 신촌 ... (필터용)
     address     VARCHAR2(300),                              -- 가게 주소 (공개 정보)
@@ -118,7 +111,9 @@ CREATE TABLE theme (
     booking_url   VARCHAR2(500)   NOT NULL,                 -- "예약하러 가기" 링크
     source        VARCHAR2(10)    DEFAULT 'OWNER' NOT NULL, -- OWNER(사장 등록) / CRAWL(크롤링)
     status        VARCHAR2(10)    DEFAULT 'PENDING' NOT NULL, -- PENDING(승인 대기) / OPEN / REJECTED(반려) / CLOSED(운영 종료)
-    created_at    DATE            DEFAULT SYSDATE NOT NULL,
+    review_count  NUMBER(6)       DEFAULT 0 NOT NULL,       -- 후기 수 (숨김 후기 제외)
+    avg_rating    NUMBER(2,1)     DEFAULT 0 NOT NULL,       -- 평균 별점 0.0~5.0 (후기 없으면 0)
+    created_at    DATE            DEFAULT SYSDATE NOT NULL, -- 등록한 날짜
     CONSTRAINT theme_pk         PRIMARY KEY (theme_id),
     CONSTRAINT theme_store_fk   FOREIGN KEY (store_id) REFERENCES store(store_id),
     CONSTRAINT theme_diff_ck    CHECK (difficulty BETWEEN 1 AND 5),

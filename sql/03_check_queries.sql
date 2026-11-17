@@ -7,16 +7,23 @@
 
 -- ===================== B : 테마 탐색 =====================
 
--- B-1. 메인 목록 : 운영 중인 테마 + 매장 + 평균 별점 + 후기 수 (숨긴 후기는 빼고 계산)
+-- B-1. 메인 목록 : 운영 중인 테마 + 매장 + 평균 별점 + 후기 수
+--      평균 별점·후기 수는 theme 에 저장된 값을 그대로 씀 (후기가 바뀔 때 다시 계산해서 저장)
 SELECT t.theme_id, t.title, s.name AS store_name, s.area,
-       ROUND(AVG(r.rating), 1) AS avg_rating,
-       COUNT(r.review_id)      AS review_count
+       t.avg_rating, t.review_count, t.created_at
 FROM theme t
 JOIN store s ON s.store_id = t.store_id
-LEFT JOIN review r ON r.theme_id = t.theme_id AND r.status = 'VISIBLE'
 WHERE t.status = 'OPEN'
-GROUP BY t.theme_id, t.title, s.name, s.area
-ORDER BY avg_rating DESC NULLS LAST, t.theme_id;
+ORDER BY t.avg_rating DESC, t.theme_id;
+
+-- B-1-1. 확인용 : 저장된 값과 review 에서 직접 계산한 값이 같은지 (diff 가 0 이면 정상)
+SELECT t.theme_id, t.review_count, t.avg_rating,
+       COUNT(r.review_id)                    AS calc_count,
+       NVL(ROUND(AVG(r.rating), 1), 0)       AS calc_avg
+FROM theme t
+LEFT JOIN review r ON r.theme_id = t.theme_id AND r.status = 'VISIBLE'
+GROUP BY t.theme_id, t.review_count, t.avg_rating
+HAVING t.review_count <> COUNT(r.review_id) OR t.avg_rating <> NVL(ROUND(AVG(r.rating), 1), 0);
 
 -- B-2. 필터 : 2명 / 내일 / 예약 가능 / 홍대 / 공포  → 1번, 17번 테마가 나와야 함
 SELECT t.theme_id, t.title, s.name AS store_name
@@ -106,21 +113,20 @@ WHERE pm.member_id = 4
 
 -- ===================== C : 사장 + 관리 =====================
 
--- C-1. 관리 매장 목록 : 점주는 owner_id = 나, 본사는 brand.hq_id = 나
---      9번(미스터리룸 본사) → 매장 1, 2 / 2번으로 바꾸면 매장 1 / 3번으로 바꾸면 매장 3, 4
+-- C-1. 관리 매장 목록 : owner_id = 나 인 매장
+--      9번 → 매장 2 / 2번으로 바꾸면 매장 1 / 3번으로 바꾸면 매장 3, 4
 SELECT s.store_id, s.name, b.name AS brand_name
 FROM store s
 LEFT JOIN brand b ON b.brand_id = s.brand_id
-WHERE s.owner_id = 9 OR b.hq_id = 9
+WHERE s.owner_id = 9
 ORDER BY s.store_id;
 
--- C-2. 권한 확인 : 5번 테마(미스터리룸 강남점)를 9번(본사)이 고칠 수 있나?  1 이면 가능
+-- C-2. 권한 확인 : 5번 테마(미스터리룸 강남점)를 9번이 고칠 수 있나?  1 이면 가능
 --      9 를 3 으로 바꾸면 0 → 남의 매장 테마라서 403
 SELECT COUNT(*) AS can_manage
 FROM theme t
 JOIN store s ON s.store_id = t.store_id
-LEFT JOIN brand b ON b.brand_id = s.brand_id
-WHERE t.theme_id = 5 AND (s.owner_id = 9 OR b.hq_id = 9);
+WHERE t.theme_id = 5 AND s.owner_id = 9;
 
 -- C-3. 관리자 : 승인 대기 중인 테마 → 21번(마법학교 입학시험)이 나와야 함
 SELECT t.theme_id, t.title, s.name AS store_name, t.created_at

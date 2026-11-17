@@ -6,16 +6,16 @@
 --  * 매장·테마 이름은 전부 지어낸 것. 예약 링크는 example.com (가짜 주소)
 --  * 맨 끝에 COMMIT 이 있어야 다른 접속(스프링 서버)에서도 보임
 
--- 1. 회원 : 1 관리자 / 2~3 사장(점주) / 4~7 손님 / 8 정지된 손님 / 9 사장(본사)
-INSERT INTO member (member_id, login_id, password, nickname, role, owner_type, status) VALUES (sq_member.NEXTVAL, 'admin',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '관리자',         'ADMIN', NULL,    'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, owner_type, status) VALUES (sq_member.NEXTVAL, 'owner1', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '미스터리룸홍대', 'OWNER', 'STORE', 'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, owner_type, status) VALUES (sq_member.NEXTVAL, 'owner2', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '열쇠공방사장',   'OWNER', 'STORE', 'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, owner_type, status) VALUES (sq_member.NEXTVAL, 'user1',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '탈출왕',         'USER',  NULL,    'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, owner_type, status) VALUES (sq_member.NEXTVAL, 'user2',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '힌트없이',       'USER',  NULL,    'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, owner_type, status) VALUES (sq_member.NEXTVAL, 'user3',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '쫄보',           'USER',  NULL,    'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, owner_type, status) VALUES (sq_member.NEXTVAL, 'user4',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '방린이',         'USER',  NULL,    'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, owner_type, status) VALUES (sq_member.NEXTVAL, 'user5',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '정지된회원',     'USER',  NULL,    'BANNED');
-INSERT INTO member (member_id, login_id, password, nickname, role, owner_type, status) VALUES (sq_member.NEXTVAL, 'hq1',    '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '미스터리룸본사', 'OWNER', 'HQ',    'ACTIVE');
+-- 1. 회원 : 1 관리자 / 2~3 사장(점주) / 4~7 손님 / 8 정지된 손님 / 9 사장(점주)
+INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'admin',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '관리자',         'ADMIN', 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'owner1', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '미스터리룸홍대', 'OWNER', 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'owner2', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '열쇠공방사장',   'OWNER', 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'user1',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '탈출왕',         'USER',  'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'user2',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '힌트없이',       'USER',  'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'user3',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '쫄보',           'USER',  'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'user4',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '방린이',         'USER',  'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'user5',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '정지된회원',     'USER',  'BANNED');
+INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'owner3', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '미스터리룸강남', 'OWNER', 'ACTIVE');
 
 -- 2. 장르 : 1 공포 / 2 추리 / 3 감성 / 4 코믹 / 5 어드벤처 / 6 SF / 7 잠입
 INSERT INTO genre (genre_id, name) VALUES (sq_genre.NEXTVAL, '공포');
@@ -27,13 +27,13 @@ INSERT INTO genre (genre_id, name) VALUES (sq_genre.NEXTVAL, 'SF');
 INSERT INTO genre (genre_id, name) VALUES (sq_genre.NEXTVAL, '잠입');
 
 -- 3. 브랜드와 매장
---    브랜드 1 '미스터리룸' (본사 9번) → 매장 1 (점주 2번), 매장 2 (점주 없음, 본사가 관리)
+--    브랜드 1 '미스터리룸' → 매장 1 (점주 2번), 매장 2 (점주 9번)
 --    매장 3~4 '열쇠공방' : 일반 매장, 점주 3번이 두 곳 운영
---    매장 5 '어둠상자'  : 크롤링으로 들어온 일반 매장 (점주 없음)
-INSERT INTO brand (brand_id, name, hq_id) VALUES (sq_brand.NEXTVAL, '미스터리룸', 9);
+--    매장 5 '어둠상자'  : 관리자가 등록한 일반 매장 (점주 없음)
+INSERT INTO brand (brand_id, name) VALUES (sq_brand.NEXTVAL, '미스터리룸');
 
 INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, 1,    2,    '미스터리룸 홍대점', '홍대', '서울 마포구 (예시 주소) 1층', 37.555100, 126.922000, '02-000-0001');
-INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, 1,    NULL, '미스터리룸 강남점', '강남', '서울 강남구 (예시 주소) 2층', 37.497900, 127.027600, '02-000-0002');
+INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, 1,    9,    '미스터리룸 강남점', '강남', '서울 강남구 (예시 주소) 2층', 37.497900, 127.027600, '02-000-0002');
 INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, NULL, 3,    '열쇠공방 건대점',   '건대', '서울 광진구 (예시 주소) 3층', 37.540400, 127.069200, '02-000-0003');
 INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, NULL, 3,    '열쇠공방 신촌점',   '신촌', '서울 서대문구 (예시 주소) 지하 1층', 37.559800, 126.942500, '02-000-0004');
 INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, NULL, NULL, '어둠상자 홍대점',   '홍대', '서울 마포구 (예시 주소) 지하 2층', 37.556300, 126.923600, '02-000-0005');
@@ -128,7 +128,7 @@ INSERT INTO wishlist (wish_id, member_id, theme_id) VALUES (sq_wishlist.NEXTVAL,
 
 -- 8. 후기 (한 줄 후기가 NULL 이면 별점만 남긴 것)
 --    22번은 신고 대기 중, 23번은 광고 글이라 관리자가 숨김(HIDDEN) + 작성자 정지
---    컬럼 순서 : 번호, 회원, 닉네임, 테마, 별점, 탈출, 힌트, 플레이한 날, 한 줄 후기, 상태
+--    컬럼 순서 : 번호, 회원, 테마, 별점, 탈출, 힌트, 플레이한 날, 한 줄 후기, 상태
 INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, 2,  5, 'Y', 0, TRUNC(SYSDATE) - 30, '단서가 깔끔하게 이어져서 좋았어요.', 'VISIBLE');
 INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, 9,  5, 'Y', 1, TRUNC(SYSDATE) - 25, '진짜 무서워요. 공포 좋아하면 무조건 추천.', 'VISIBLE');
 INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, 10, 4, 'Y', 2, TRUNC(SYSDATE) - 20, NULL, 'VISIBLE');
@@ -152,6 +152,12 @@ INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count,
 INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 7, 18, 3, 'N', 5, TRUNC(SYSDATE) - 8,  '저한테는 너무 어려웠어요.', 'VISIBLE');
 INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 7, 4,  1, 'N', 6, TRUNC(SYSDATE) - 5,  '돈 아까워요. 직원도 불친절했어요.', 'VISIBLE');
 INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 8, 1, 1, 'N', 0, TRUNC(SYSDATE) - 35, '광고) 다른 사이트에서 더 싸게 예약하세요', 'HIDDEN');
+
+-- 8-1. 테마의 후기 수·평균 별점 채우기 (숨김 후기 제외, 후기 없으면 0)
+--      서버에서는 후기 작성·수정·삭제·숨김 때마다 같은 방식으로 다시 계산해서 넣는다
+UPDATE theme t
+SET review_count = (SELECT COUNT(*) FROM review r WHERE r.theme_id = t.theme_id AND r.status = 'VISIBLE'),
+    avg_rating   = (SELECT NVL(ROUND(AVG(r.rating), 1), 0) FROM review r WHERE r.theme_id = t.theme_id AND r.status = 'VISIBLE');
 
 -- 9. 후기 신고 : 23번 후기(광고)는 처리 완료, 22번 후기는 대기 중
 INSERT INTO report (report_id, review_id, reporter_id, reason, status) VALUES (sq_report.NEXTVAL, 23, 2, '다른 사이트 광고 글입니다.', 'DONE');

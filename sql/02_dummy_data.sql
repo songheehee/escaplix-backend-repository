@@ -129,29 +129,29 @@ INSERT INTO wishlist (wish_id, member_id, theme_id) VALUES (sq_wishlist.NEXTVAL,
 -- 8. 후기 (한 줄 후기가 NULL 이면 별점만 남긴 것)
 --    22번은 신고 대기 중, 23번은 광고 글이라 관리자가 숨김(HIDDEN) + 작성자 정지
 --    컬럼 순서 : 번호, 회원, 닉네임, 테마, 별점, 탈출, 힌트, 플레이한 날, 한 줄 후기, 상태
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, '탈출왕', 2,  5, 'Y', 0, TRUNC(SYSDATE) - 30, '단서가 깔끔하게 이어져서 좋았어요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, '탈출왕', 9,  5, 'Y', 1, TRUNC(SYSDATE) - 25, '진짜 무서워요. 공포 좋아하면 무조건 추천.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, '탈출왕', 10, 4, 'Y', 2, TRUNC(SYSDATE) - 20, NULL, 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, '탈출왕', 13, 4, 'N', 3, TRUNC(SYSDATE) - 15, '마지막 장치에서 시간이 모자랐어요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, '탈출왕', 5,  3, 'Y', 2, TRUNC(SYSDATE) - 10, '연출은 좋은데 문제가 조금 쉬워요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, '탈출왕', 6,  4, 'Y', 1, TRUNC(SYSDATE) - 7,  NULL, 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, '힌트없이', 1,  4, 'Y', 0, TRUNC(SYSDATE) - 28, '인형 연출이 소름 돋아요. 추리도 탄탄해요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, '힌트없이', 8,  5, 'Y', 0, TRUNC(SYSDATE) - 21, '잠입 테마 중 최고예요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, '힌트없이', 15, 4, 'N', 2, TRUNC(SYSDATE) - 14, '비행기 세트가 멋있어요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, '힌트없이', 19, 3, 'Y', 1, TRUNC(SYSDATE) - 9,  NULL, 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, '힌트없이', 10, 5, 'Y', 0, TRUNC(SYSDATE) - 3,  '명탐정 놀이 제대로 했어요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, '힌트없이', 2,  4, 'Y', 1, TRUNC(SYSDATE) - 2,  NULL, 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, '쫄보', 3,  5, 'Y', 2, TRUNC(SYSDATE) - 26, '마지막에 눈물 날 뻔했어요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, '쫄보', 7,  4, 'Y', 1, TRUNC(SYSDATE) - 19, '친구들이랑 계속 웃었어요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, '쫄보', 11, 5, 'Y', 3, TRUNC(SYSDATE) - 12, '편지 연출이 감동이에요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, '쫄보', 14, 2, 'N', 5, TRUNC(SYSDATE) - 6,  '무서워서 힌트만 다섯 번 썼어요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, '쫄보', 20, 4, 'Y', 1, TRUNC(SYSDATE) - 4,  NULL, 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, '쫄보', 16, 5, 'Y', 0, TRUNC(SYSDATE) - 1,  '커플 테마로 강력 추천해요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 7, '방린이', 7,  5, 'Y', 4, TRUNC(SYSDATE) - 18, '첫 방탈출인데 재밌었어요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 7, '방린이', 12, 3, 'N', 4, TRUNC(SYSDATE) - 40, NULL, 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 7, '방린이', 18, 3, 'N', 5, TRUNC(SYSDATE) - 8,  '저한테는 너무 어려웠어요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 7, '방린이', 4,  1, 'N', 6, TRUNC(SYSDATE) - 5,  '돈 아까워요. 직원도 불친절했어요.', 'VISIBLE');
-INSERT INTO review (review_id, member_id, nickname, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 8, '정지된회원', 1, 1, 'N', 0, TRUNC(SYSDATE) - 35, '광고) 다른 사이트에서 더 싸게 예약하세요', 'HIDDEN');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, 2,  5, 'Y', 0, TRUNC(SYSDATE) - 30, '단서가 깔끔하게 이어져서 좋았어요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, 9,  5, 'Y', 1, TRUNC(SYSDATE) - 25, '진짜 무서워요. 공포 좋아하면 무조건 추천.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, 10, 4, 'Y', 2, TRUNC(SYSDATE) - 20, NULL, 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, 13, 4, 'N', 3, TRUNC(SYSDATE) - 15, '마지막 장치에서 시간이 모자랐어요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, 5,  3, 'Y', 2, TRUNC(SYSDATE) - 10, '연출은 좋은데 문제가 조금 쉬워요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 4, 6,  4, 'Y', 1, TRUNC(SYSDATE) - 7,  NULL, 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, 1,  4, 'Y', 0, TRUNC(SYSDATE) - 28, '인형 연출이 소름 돋아요. 추리도 탄탄해요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, 8,  5, 'Y', 0, TRUNC(SYSDATE) - 21, '잠입 테마 중 최고예요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, 15, 4, 'N', 2, TRUNC(SYSDATE) - 14, '비행기 세트가 멋있어요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, 19, 3, 'Y', 1, TRUNC(SYSDATE) - 9,  NULL, 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, 10, 5, 'Y', 0, TRUNC(SYSDATE) - 3,  '명탐정 놀이 제대로 했어요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 5, 2,  4, 'Y', 1, TRUNC(SYSDATE) - 2,  NULL, 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, 3,  5, 'Y', 2, TRUNC(SYSDATE) - 26, '마지막에 눈물 날 뻔했어요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, 7,  4, 'Y', 1, TRUNC(SYSDATE) - 19, '친구들이랑 계속 웃었어요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, 11, 5, 'Y', 3, TRUNC(SYSDATE) - 12, '편지 연출이 감동이에요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, 14, 2, 'N', 5, TRUNC(SYSDATE) - 6,  '무서워서 힌트만 다섯 번 썼어요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, 20, 4, 'Y', 1, TRUNC(SYSDATE) - 4,  NULL, 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 6, 16, 5, 'Y', 0, TRUNC(SYSDATE) - 1,  '커플 테마로 강력 추천해요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 7, 7,  5, 'Y', 4, TRUNC(SYSDATE) - 18, '첫 방탈출인데 재밌었어요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 7, 12, 3, 'N', 4, TRUNC(SYSDATE) - 40, NULL, 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 7, 18, 3, 'N', 5, TRUNC(SYSDATE) - 8,  '저한테는 너무 어려웠어요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 7, 4,  1, 'N', 6, TRUNC(SYSDATE) - 5,  '돈 아까워요. 직원도 불친절했어요.', 'VISIBLE');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, played_date, content, status) VALUES (sq_review.NEXTVAL, 8, 1, 1, 'N', 0, TRUNC(SYSDATE) - 35, '광고) 다른 사이트에서 더 싸게 예약하세요', 'HIDDEN');
 
 -- 9. 후기 신고 : 23번 후기(광고)는 처리 완료, 22번 후기는 대기 중
 INSERT INTO report (report_id, review_id, reporter_id, reason, status) VALUES (sq_report.NEXTVAL, 23, 2, '다른 사이트 광고 글입니다.', 'DONE');
@@ -177,22 +177,22 @@ INSERT INTO party (party_id, theme_id, leader_id, title, play_at, max_people, st
 
 -- 12. 파티 참여자 (방장도 한 줄)
 --     3번 파티는 끝났고 4번 회원은 15번 테마 후기가 없음 → 4번 회원 로그인 시 후기 팝업 대상
-INSERT INTO party_member (id, party_id, member_id, nickname) VALUES (sq_party_member.NEXTVAL, 1, 4, '탈출왕');
-INSERT INTO party_member (id, party_id, member_id, nickname) VALUES (sq_party_member.NEXTVAL, 1, 5, '힌트없이');
-INSERT INTO party_member (id, party_id, member_id, nickname) VALUES (sq_party_member.NEXTVAL, 2, 7, '방린이');
-INSERT INTO party_member (id, party_id, member_id, nickname) VALUES (sq_party_member.NEXTVAL, 2, 6, '쫄보');
-INSERT INTO party_member (id, party_id, member_id, nickname) VALUES (sq_party_member.NEXTVAL, 2, 5, '힌트없이');
-INSERT INTO party_member (id, party_id, member_id, nickname) VALUES (sq_party_member.NEXTVAL, 3, 5, '힌트없이');
-INSERT INTO party_member (id, party_id, member_id, nickname) VALUES (sq_party_member.NEXTVAL, 3, 4, '탈출왕');
-INSERT INTO party_member (id, party_id, member_id, nickname) VALUES (sq_party_member.NEXTVAL, 4, 4, '탈출왕');
+INSERT INTO party_member (id, party_id, member_id) VALUES (sq_party_member.NEXTVAL, 1, 4);
+INSERT INTO party_member (id, party_id, member_id) VALUES (sq_party_member.NEXTVAL, 1, 5);
+INSERT INTO party_member (id, party_id, member_id) VALUES (sq_party_member.NEXTVAL, 2, 7);
+INSERT INTO party_member (id, party_id, member_id) VALUES (sq_party_member.NEXTVAL, 2, 6);
+INSERT INTO party_member (id, party_id, member_id) VALUES (sq_party_member.NEXTVAL, 2, 5);
+INSERT INTO party_member (id, party_id, member_id) VALUES (sq_party_member.NEXTVAL, 3, 5);
+INSERT INTO party_member (id, party_id, member_id) VALUES (sq_party_member.NEXTVAL, 3, 4);
+INSERT INTO party_member (id, party_id, member_id) VALUES (sq_party_member.NEXTVAL, 4, 4);
 
 -- 13. 파티 채팅 (created_at 을 몇 시간 전으로 넣어서 순서가 보이게)
-INSERT INTO party_message (message_id, party_id, member_id, nickname, content, created_at) VALUES (sq_party_message.NEXTVAL, 1, 4, '탈출왕',   '안녕하세요! 모레 저녁 8시 괜찮으세요?',       SYSDATE - 3/24);
-INSERT INTO party_message (message_id, party_id, member_id, nickname, content, created_at) VALUES (sq_party_message.NEXTVAL, 1, 5, '힌트없이', '좋아요. 힌트 최대한 안 쓰고 가 봐요.',        SYSDATE - 2/24);
-INSERT INTO party_message (message_id, party_id, member_id, nickname, content, created_at) VALUES (sq_party_message.NEXTVAL, 1, 4, '탈출왕',   '두 분만 더 구해지면 바로 예약할게요.',         SYSDATE - 1/24);
-INSERT INTO party_message (message_id, party_id, member_id, nickname, content, created_at) VALUES (sq_party_message.NEXTVAL, 2, 7, '방린이',   '다 모였어요! 예약은 제가 할게요.',             SYSDATE - 5/24);
-INSERT INTO party_message (message_id, party_id, member_id, nickname, content, created_at) VALUES (sq_party_message.NEXTVAL, 2, 6, '쫄보',     '무서운 거 없는 테마 맞죠?',                    SYSDATE - 4/24);
-INSERT INTO party_message (message_id, party_id, member_id, nickname, content, created_at) VALUES (sq_party_message.NEXTVAL, 2, 5, '힌트없이', '코믹 테마라 하나도 안 무서워요.',              SYSDATE - 3/24);
+INSERT INTO party_message (message_id, party_id, member_id, content, created_at) VALUES (sq_party_message.NEXTVAL, 1, 4, '안녕하세요! 모레 저녁 8시 괜찮으세요?',       SYSDATE - 3/24);
+INSERT INTO party_message (message_id, party_id, member_id, content, created_at) VALUES (sq_party_message.NEXTVAL, 1, 5, '좋아요. 힌트 최대한 안 쓰고 가 봐요.',        SYSDATE - 2/24);
+INSERT INTO party_message (message_id, party_id, member_id, content, created_at) VALUES (sq_party_message.NEXTVAL, 1, 4, '두 분만 더 구해지면 바로 예약할게요.',         SYSDATE - 1/24);
+INSERT INTO party_message (message_id, party_id, member_id, content, created_at) VALUES (sq_party_message.NEXTVAL, 2, 7, '다 모였어요! 예약은 제가 할게요.',             SYSDATE - 5/24);
+INSERT INTO party_message (message_id, party_id, member_id, content, created_at) VALUES (sq_party_message.NEXTVAL, 2, 6, '무서운 거 없는 테마 맞죠?',                    SYSDATE - 4/24);
+INSERT INTO party_message (message_id, party_id, member_id, content, created_at) VALUES (sq_party_message.NEXTVAL, 2, 5, '코믹 테마라 하나도 안 무서워요.',              SYSDATE - 3/24);
 
 COMMIT;
 

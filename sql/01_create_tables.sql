@@ -2,8 +2,8 @@
 -- Oracle XE 11g 기준. 테이블 14개
 --  * 한글 1글자 = 3바이트 (DB 문자셋이 AL32UTF8, 크기는 바이트 기준)
 --    → VARCHAR2(60) 에는 한글 20자까지 들어감
---  * 회원번호를 담는 컬럼(ERD 점선)은 FK 없이 번호만 저장 (MEMBER 는 회원 서버 테이블)
---    MSA 를 안 하면 맨 아래 "MSA 안 할 때" 부분 주석을 풀어서 FK 를 건다
+--  * 서버 하나(통합)라서 회원번호 컬럼도 MEMBER 에 FK 를 건다
+--    닉네임은 따로 저장하지 않고 필요할 때 JOIN member 로 가져온다
 --  * 테마·매장은 DELETE 하지 말고 status 로 관리 (후기·찜·파티가 테마를 참조함)
 --  * DEFAULT 가 있는 컬럼 : JPA 는 값이 null 이면 null 을 그대로 INSERT 해서 DEFAULT 가 안 들어감
 --    → 엔티티에 @DynamicInsert 를 붙이거나 자바에서 값을 넣어 준다
@@ -45,8 +45,6 @@ DROP SEQUENCE sq_party_member;
 DROP SEQUENCE sq_party_message;
 
 
--- ================= 회원 서버 (member-service, 8081) =================
-
 -- 3. 회원 (손님 / 사장 / 관리자를 role 하나로 구분. 사장은 점주·본사를 owner_type 으로 구분)
 CREATE TABLE member (
     member_id   NUMBER        NOT NULL,
@@ -68,9 +66,6 @@ CREATE TABLE member (
     CONSTRAINT member_status_ck     CHECK (status IN ('ACTIVE', 'BANNED'))
 );
 
-
--- ================= 방탈출 서버 (escape-service, 8082) =================
-
 -- 4. 장르 (코드 테이블 : 처음에 넣어 두고 거의 안 바뀜)
 CREATE TABLE genre (
     genre_id  NUMBER        NOT NULL,
@@ -83,9 +78,10 @@ CREATE TABLE genre (
 CREATE TABLE brand (
     brand_id    NUMBER        NOT NULL,
     name        VARCHAR2(90)  NOT NULL,                     -- 한글 30자
-    hq_id       NUMBER,                                     -- 본사 회원번호 (FK 없음)
+    hq_id       NUMBER,                                     -- 본사 회원번호
     created_at  DATE          DEFAULT SYSDATE NOT NULL,
     CONSTRAINT brand_pk      PRIMARY KEY (brand_id),
+    CONSTRAINT brand_hq_fk   FOREIGN KEY (hq_id) REFERENCES member(member_id),
     CONSTRAINT brand_name_uk UNIQUE (name)
 );
 
@@ -94,7 +90,7 @@ CREATE TABLE brand (
 CREATE TABLE store (
     store_id    NUMBER         NOT NULL,
     brand_id    NUMBER,                                     -- 프랜차이즈 브랜드. 일반 매장은 NULL
-    owner_id    NUMBER,                                     -- 점주 회원번호 (FK 없음). 본사 직영·크롤링 매장은 NULL
+    owner_id    NUMBER,                                     -- 점주 회원번호. 본사 직영·크롤링 매장은 NULL
     name        VARCHAR2(150)  NOT NULL,                    -- 한글 50자
     area        VARCHAR2(30)   NOT NULL,                    -- 홍대 / 강남 / 건대 / 신촌 ... (필터용)
     address     VARCHAR2(300),                              -- 가게 주소 (공개 정보)
@@ -103,7 +99,8 @@ CREATE TABLE store (
     phone       VARCHAR2(20),
     created_at  DATE           DEFAULT SYSDATE NOT NULL,
     CONSTRAINT store_pk       PRIMARY KEY (store_id),
-    CONSTRAINT store_brand_fk FOREIGN KEY (brand_id) REFERENCES brand(brand_id)
+    CONSTRAINT store_brand_fk FOREIGN KEY (brand_id) REFERENCES brand(brand_id),
+    CONSTRAINT store_owner_fk FOREIGN KEY (owner_id) REFERENCES member(member_id)
 );
 
 -- 7. 테마 (사장이 등록·수정하면 PENDING → 관리자 승인 시 OPEN, 반려 시 REJECTED)
@@ -156,10 +153,11 @@ CREATE TABLE time_slot (
 -- 10. 찜 (회원 ↔ 테마 N:M 중간 테이블)
 CREATE TABLE wishlist (
     wish_id     NUMBER  NOT NULL,
-    member_id   NUMBER  NOT NULL,                           -- 회원번호 (FK 없음)
+    member_id   NUMBER  NOT NULL,
     theme_id    NUMBER  NOT NULL,
     created_at  DATE    DEFAULT SYSDATE NOT NULL,
-    CONSTRAINT wishlist_pk       PRIMARY KEY (wish_id),
+    CONSTRAINT wishlist_pk        PRIMARY KEY (wish_id),
+    CONSTRAINT wishlist_member_fk FOREIGN KEY (member_id) REFERENCES member(member_id),
     CONSTRAINT wishlist_theme_fk FOREIGN KEY (theme_id) REFERENCES theme(theme_id),
     CONSTRAINT wishlist_uk       UNIQUE (member_id, theme_id)      -- 같은 테마 두 번 찜 금지
 );
@@ -167,8 +165,7 @@ CREATE TABLE wishlist (
 -- 11. 후기 (회원 ↔ 테마 N:M 인데 별점·성공 여부 같은 데이터도 가짐)
 CREATE TABLE review (
     review_id    NUMBER         NOT NULL,
-    member_id    NUMBER         NOT NULL,                   -- 회원번호 (FK 없음)
-    nickname     VARCHAR2(60)   NOT NULL,                   -- 닉네임 복사본 (회원 서버와 JOIN 못 해서)
+    member_id    NUMBER         NOT NULL,
     theme_id     NUMBER         NOT NULL,
     rating       NUMBER(1)      NOT NULL,                   -- 별점 1~5
     escaped      CHAR(1)        NOT NULL,                   -- 탈출 성공 Y / N
@@ -178,6 +175,7 @@ CREATE TABLE review (
     status       VARCHAR2(10)   DEFAULT 'VISIBLE' NOT NULL, -- VISIBLE / HIDDEN (신고 확인 후 관리자가 숨김)
     created_at   DATE           DEFAULT SYSDATE NOT NULL,
     CONSTRAINT review_pk         PRIMARY KEY (review_id),
+    CONSTRAINT review_member_fk  FOREIGN KEY (member_id) REFERENCES member(member_id),
     CONSTRAINT review_theme_fk   FOREIGN KEY (theme_id) REFERENCES theme(theme_id),
     CONSTRAINT review_uk         UNIQUE (member_id, theme_id),     -- 한 테마에 후기 하나
     CONSTRAINT review_rating_ck  CHECK (rating BETWEEN 1 AND 5),
@@ -189,12 +187,13 @@ CREATE TABLE review (
 CREATE TABLE report (
     report_id    NUMBER         NOT NULL,
     review_id    NUMBER         NOT NULL,
-    reporter_id  NUMBER         NOT NULL,                   -- 신고한 회원번호 (FK 없음)
+    reporter_id  NUMBER         NOT NULL,                   -- 신고한 회원번호
     reason       VARCHAR2(900)  NOT NULL,                   -- 한글 300자
     status       VARCHAR2(10)   DEFAULT 'WAIT' NOT NULL,    -- WAIT(대기) / DONE(처리 완료)
     created_at   DATE           DEFAULT SYSDATE NOT NULL,
     CONSTRAINT report_pk        PRIMARY KEY (report_id),
-    CONSTRAINT report_review_fk FOREIGN KEY (review_id) REFERENCES review(review_id),
+    CONSTRAINT report_review_fk   FOREIGN KEY (review_id) REFERENCES review(review_id),
+    CONSTRAINT report_reporter_fk FOREIGN KEY (reporter_id) REFERENCES member(member_id),
     CONSTRAINT report_uk        UNIQUE (review_id, reporter_id),   -- 같은 후기 두 번 신고 금지
     CONSTRAINT report_status_ck CHECK (status IN ('WAIT', 'DONE'))
 );
@@ -202,9 +201,10 @@ CREATE TABLE report (
 -- 13. 선호 장르 (회원 ↔ 장르 N:M 중간 테이블)
 CREATE TABLE member_genre (
     id         NUMBER  NOT NULL,                            -- 대체키
-    member_id  NUMBER  NOT NULL,                            -- 회원번호 (FK 없음)
+    member_id  NUMBER  NOT NULL,
     genre_id   NUMBER  NOT NULL,
-    CONSTRAINT member_genre_pk       PRIMARY KEY (id),
+    CONSTRAINT member_genre_pk        PRIMARY KEY (id),
+    CONSTRAINT member_genre_member_fk FOREIGN KEY (member_id) REFERENCES member(member_id),
     CONSTRAINT member_genre_genre_fk FOREIGN KEY (genre_id) REFERENCES genre(genre_id),
     CONSTRAINT member_genre_uk       UNIQUE (member_id, genre_id)
 );
@@ -213,7 +213,7 @@ CREATE TABLE member_genre (
 CREATE TABLE party (
     party_id    NUMBER         NOT NULL,
     theme_id    NUMBER         NOT NULL,
-    leader_id   NUMBER         NOT NULL,                    -- 방장 회원번호 (FK 없음)
+    leader_id   NUMBER         NOT NULL,                    -- 방장 회원번호
     title       VARCHAR2(300)  NOT NULL,                    -- 한글 100자
     play_at     DATE           NOT NULL,                    -- 예약 날짜·시간. 끝난 뒤 참여자에게 후기 팝업
     max_people  NUMBER(2)      NOT NULL,                    -- 모집 인원 (테마 최대 인원 이하인지는 서버에서 확인)
@@ -221,6 +221,7 @@ CREATE TABLE party (
     created_at  DATE           DEFAULT SYSDATE NOT NULL,
     CONSTRAINT party_pk        PRIMARY KEY (party_id),
     CONSTRAINT party_theme_fk  FOREIGN KEY (theme_id) REFERENCES theme(theme_id),
+    CONSTRAINT party_leader_fk FOREIGN KEY (leader_id) REFERENCES member(member_id),
     CONSTRAINT party_people_ck CHECK (max_people >= 2),
     CONSTRAINT party_status_ck CHECK (status IN ('RECRUITING', 'FULL', 'CLOSED'))
 );
@@ -229,11 +230,11 @@ CREATE TABLE party (
 CREATE TABLE party_member (
     id         NUMBER        NOT NULL,                      -- 대체키
     party_id   NUMBER        NOT NULL,
-    member_id  NUMBER        NOT NULL,                      -- 회원번호 (FK 없음)
-    nickname   VARCHAR2(60)  NOT NULL,                      -- 닉네임 복사본
+    member_id  NUMBER        NOT NULL,
     joined_at  DATE          DEFAULT SYSDATE NOT NULL,
     CONSTRAINT party_member_pk       PRIMARY KEY (id),
-    CONSTRAINT party_member_party_fk FOREIGN KEY (party_id) REFERENCES party(party_id),
+    CONSTRAINT party_member_party_fk  FOREIGN KEY (party_id) REFERENCES party(party_id),
+    CONSTRAINT party_member_member_fk FOREIGN KEY (member_id) REFERENCES member(member_id),
     CONSTRAINT party_member_uk       UNIQUE (party_id, member_id)  -- 같은 파티 두 번 참여 금지
 );
 
@@ -241,12 +242,12 @@ CREATE TABLE party_member (
 CREATE TABLE party_message (
     message_id  NUMBER          NOT NULL,
     party_id    NUMBER          NOT NULL,
-    member_id   NUMBER          NOT NULL,                   -- 보낸 회원번호 (FK 없음)
-    nickname    VARCHAR2(60)    NOT NULL,                   -- 닉네임 복사본
+    member_id   NUMBER          NOT NULL,                   -- 보낸 회원번호
     content     VARCHAR2(1500)  NOT NULL,                   -- 한글 500자
     created_at  DATE            DEFAULT SYSDATE NOT NULL,
     CONSTRAINT party_message_pk       PRIMARY KEY (message_id),
-    CONSTRAINT party_message_party_fk FOREIGN KEY (party_id) REFERENCES party(party_id)
+    CONSTRAINT party_message_party_fk  FOREIGN KEY (party_id) REFERENCES party(party_id),
+    CONSTRAINT party_message_member_fk FOREIGN KEY (member_id) REFERENCES member(member_id)
 );
 
 
@@ -266,15 +267,3 @@ CREATE SEQUENCE sq_party;
 CREATE SEQUENCE sq_party_member;
 CREATE SEQUENCE sq_party_message;
 
-
--- ================= MSA 안 할 때 (서버 하나로 만들 때)만 =================
--- 아래 주석을 풀면 회원번호 컬럼(ERD 점선)도 진짜 FK 가 된다
--- ALTER TABLE brand         ADD CONSTRAINT brand_hq_fk             FOREIGN KEY (hq_id)       REFERENCES member(member_id);
--- ALTER TABLE store         ADD CONSTRAINT store_owner_fk          FOREIGN KEY (owner_id)    REFERENCES member(member_id);
--- ALTER TABLE wishlist      ADD CONSTRAINT wishlist_member_fk      FOREIGN KEY (member_id)   REFERENCES member(member_id);
--- ALTER TABLE review        ADD CONSTRAINT review_member_fk        FOREIGN KEY (member_id)   REFERENCES member(member_id);
--- ALTER TABLE report        ADD CONSTRAINT report_reporter_fk      FOREIGN KEY (reporter_id) REFERENCES member(member_id);
--- ALTER TABLE member_genre  ADD CONSTRAINT member_genre_member_fk  FOREIGN KEY (member_id)   REFERENCES member(member_id);
--- ALTER TABLE party         ADD CONSTRAINT party_leader_fk         FOREIGN KEY (leader_id)   REFERENCES member(member_id);
--- ALTER TABLE party_member  ADD CONSTRAINT party_member_member_fk  FOREIGN KEY (member_id)   REFERENCES member(member_id);
--- ALTER TABLE party_message ADD CONSTRAINT party_message_member_fk FOREIGN KEY (member_id)   REFERENCES member(member_id);

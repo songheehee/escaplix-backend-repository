@@ -63,9 +63,10 @@ ORDER BY w.created_at DESC;
 
 -- ===================== D : 기록 + 추천 =====================
 
--- D-1. 1번 테마의 후기 목록 (숨긴 후기는 빼고)
-SELECT r.review_id, r.nickname, r.rating, r.escaped, r.hint_count, r.content
+-- D-1. 1번 테마의 후기 목록 (숨긴 후기는 빼고). 닉네임은 member 와 JOIN 해서 가져온다
+SELECT r.review_id, m.nickname, r.rating, r.escaped, r.hint_count, r.content
 FROM review r
+JOIN member m ON m.member_id = r.member_id
 WHERE r.theme_id = 1 AND r.status = 'VISIBLE'
 ORDER BY r.created_at DESC;
 
@@ -129,9 +130,10 @@ WHERE t.status = 'PENDING'
 ORDER BY t.created_at;
 
 -- C-4. 관리자 : 처리 대기 중인 신고
-SELECT rp.report_id, rp.reason, r.review_id, r.nickname AS writer, r.content AS review_content
+SELECT rp.report_id, rp.reason, r.review_id, m.nickname AS writer, r.content AS review_content
 FROM report rp
 JOIN review r ON r.review_id = rp.review_id
+JOIN member m ON m.member_id = r.member_id
 WHERE rp.status = 'WAIT'
 ORDER BY rp.created_at;
 
@@ -150,10 +152,11 @@ GROUP BY p.party_id, p.title, t.title, p.play_at, p.max_people
 ORDER BY p.play_at;
 
 -- A-2. 채팅 : 1번 파티에서 내가 마지막으로 본 메시지(1번) 다음 것만
-SELECT message_id, nickname, content, TO_CHAR(created_at, 'HH24:MI') AS sent_time
-FROM party_message
-WHERE party_id = 1 AND message_id > 1
-ORDER BY message_id;
+SELECT pm.message_id, m.nickname, pm.content, TO_CHAR(pm.created_at, 'HH24:MI') AS sent_time
+FROM party_message pm
+JOIN member m ON m.member_id = pm.member_id
+WHERE pm.party_id = 1 AND pm.message_id > 1
+ORDER BY pm.message_id;
 
 
 -- ===================== UNIQUE 확인 (직접 해 보기) =====================

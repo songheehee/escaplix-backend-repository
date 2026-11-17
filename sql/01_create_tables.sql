@@ -1,5 +1,5 @@
 -- 방탈출 통합예약 (Escaplix) : 테이블 생성 (hr 계정에서 실행)
--- Oracle XE 11g 기준. 테이블 14개
+-- Oracle XE 11g 기준. 테이블 13개
 --  * 한글 1글자 = 3바이트 (DB 문자셋이 AL32UTF8, 크기는 바이트 기준)
 --    → VARCHAR2(60) 에는 한글 20자까지 들어감
 --  * 서버 하나(통합)라서 회원번호 컬럼도 MEMBER 에 FK 를 건다
@@ -22,6 +22,7 @@ DROP TABLE time_slot;
 DROP TABLE theme_genre;
 DROP TABLE theme;
 DROP TABLE store;
+-- (brand 는 이전 버전 정리용. 지금은 안 씀)
 DROP TABLE brand;
 DROP TABLE genre;
 DROP TABLE member;
@@ -29,6 +30,7 @@ DROP TABLE member;
 -- 2. 시퀀스 삭제. 처음엔 "시퀀스 없음" 에러가 나도 무시
 DROP SEQUENCE sq_member;
 DROP SEQUENCE sq_genre;
+-- (sq_brand 는 이전 버전 정리용)
 DROP SEQUENCE sq_brand;
 DROP SEQUENCE sq_store;
 DROP SEQUENCE sq_theme;
@@ -52,12 +54,16 @@ CREATE TABLE member (
     password    VARCHAR2(60)  NOT NULL,                     -- BCrypt 해시 (항상 60자)
     nickname    VARCHAR2(60)  NOT NULL,                     -- 한글 20자
     role        VARCHAR2(10)  NOT NULL,                     -- USER(손님) / OWNER(사장 = 점주) / ADMIN
+    business_no VARCHAR2(12),                               -- 사업자등록번호 123-45-67890. 사장만 (가입할 때 받음)
     status      VARCHAR2(10)  DEFAULT 'ACTIVE' NOT NULL,    -- ACTIVE / BANNED(정지)
     created_at  DATE          DEFAULT SYSDATE NOT NULL,
     CONSTRAINT member_pk            PRIMARY KEY (member_id),
     CONSTRAINT member_login_id_uk   UNIQUE (login_id),
     CONSTRAINT member_nickname_uk   UNIQUE (nickname),
     CONSTRAINT member_role_ck       CHECK (role IN ('USER', 'OWNER', 'ADMIN')),
+    -- 사장이면 사업자등록번호 필수, 사장이 아니면 NULL
+    CONSTRAINT member_business_ck   CHECK ((role = 'OWNER' AND business_no IS NOT NULL)
+                                        OR (role <> 'OWNER' AND business_no IS NULL)),
     CONSTRAINT member_status_ck     CHECK (status IN ('ACTIVE', 'BANNED'))
 );
 
@@ -69,21 +75,12 @@ CREATE TABLE genre (
     CONSTRAINT genre_name_uk UNIQUE (name)
 );
 
--- 5. 브랜드 (프랜차이즈 이름 목록. 본사 계정은 없음)
-CREATE TABLE brand (
-    brand_id    NUMBER        NOT NULL,
-    name        VARCHAR2(90)  NOT NULL,                     -- 한글 30자
-    created_at  DATE          DEFAULT SYSDATE NOT NULL,
-    CONSTRAINT brand_pk      PRIMARY KEY (brand_id),
-    CONSTRAINT brand_name_uk UNIQUE (name)
-);
-
--- 6. 매장 (brand_id 가 NULL 이면 일반 매장)
+-- 5. 매장 (점주 한 명이 매장 여러 개 가능 : owner_id 로 연결)
 --    수정 권한 : owner_id = 나 인 매장만
 CREATE TABLE store (
     store_id    NUMBER         NOT NULL,
-    brand_id    NUMBER,                                     -- 프랜차이즈 브랜드. 일반 매장은 NULL
     owner_id    NUMBER,                                     -- 점주 회원번호. 관리자가 등록한 매장은 NULL
+    business_no VARCHAR2(12)   NOT NULL,                    -- 사업장 사업자등록번호 123-45-67890 (중복 금지)
     name        VARCHAR2(150)  NOT NULL,                    -- 한글 50자
     area        VARCHAR2(30)   NOT NULL,                    -- 홍대 / 강남 / 건대 / 신촌 ... (필터용)
     address     VARCHAR2(300),                              -- 가게 주소 (공개 정보)
@@ -91,12 +88,12 @@ CREATE TABLE store (
     lng         NUMBER(9,6),                                -- 경도 (지도, 선택)
     phone       VARCHAR2(20),
     created_at  DATE           DEFAULT SYSDATE NOT NULL,
-    CONSTRAINT store_pk       PRIMARY KEY (store_id),
-    CONSTRAINT store_brand_fk FOREIGN KEY (brand_id) REFERENCES brand(brand_id),
-    CONSTRAINT store_owner_fk FOREIGN KEY (owner_id) REFERENCES member(member_id)
+    CONSTRAINT store_pk          PRIMARY KEY (store_id),
+    CONSTRAINT store_owner_fk    FOREIGN KEY (owner_id) REFERENCES member(member_id),
+    CONSTRAINT store_business_uk UNIQUE (business_no)
 );
 
--- 7. 테마 (사장이 등록·수정하면 PENDING → 관리자 승인 시 OPEN, 반려 시 REJECTED)
+-- 6. 테마 (사장이 등록·수정하면 PENDING → 관리자 승인 시 OPEN, 반려 시 REJECTED)
 CREATE TABLE theme (
     theme_id      NUMBER          NOT NULL,
     store_id      NUMBER          NOT NULL,
@@ -122,7 +119,7 @@ CREATE TABLE theme (
     CONSTRAINT theme_status_ck  CHECK (status IN ('PENDING', 'OPEN', 'REJECTED', 'CLOSED'))
 );
 
--- 8. 테마-장르 (N:M 중간 테이블. 한 테마가 "공포 + 추리"처럼 장르 여러 개)
+-- 7. 테마-장르 (N:M 중간 테이블. 한 테마가 "공포 + 추리"처럼 장르 여러 개)
 CREATE TABLE theme_genre (
     id        NUMBER  NOT NULL,                             -- 대체키
     theme_id  NUMBER  NOT NULL,
@@ -133,7 +130,7 @@ CREATE TABLE theme_genre (
     CONSTRAINT theme_genre_uk       UNIQUE (theme_id, genre_id)
 );
 
--- 9. 예약 시간표
+-- 8. 예약 시간표
 CREATE TABLE time_slot (
     slot_id   NUMBER        NOT NULL,
     theme_id  NUMBER        NOT NULL,
@@ -145,7 +142,7 @@ CREATE TABLE time_slot (
     CONSTRAINT time_slot_status_ck CHECK (status IN ('AVAILABLE', 'FULL'))
 );
 
--- 10. 찜 (회원 ↔ 테마 N:M 중간 테이블)
+-- 9. 찜 (회원 ↔ 테마 N:M 중간 테이블)
 CREATE TABLE wishlist (
     wish_id     NUMBER  NOT NULL,
     member_id   NUMBER  NOT NULL,
@@ -157,7 +154,7 @@ CREATE TABLE wishlist (
     CONSTRAINT wishlist_uk       UNIQUE (member_id, theme_id)      -- 같은 테마 두 번 찜 금지
 );
 
--- 11. 후기 (회원 ↔ 테마 N:M 인데 별점·성공 여부 같은 데이터도 가짐)
+-- 10. 후기 (회원 ↔ 테마 N:M 인데 별점·성공 여부 같은 데이터도 가짐)
 CREATE TABLE review (
     review_id    NUMBER         NOT NULL,
     member_id    NUMBER         NOT NULL,
@@ -178,7 +175,7 @@ CREATE TABLE review (
     CONSTRAINT review_status_ck  CHECK (status IN ('VISIBLE', 'HIDDEN'))
 );
 
--- 12. 후기 신고
+-- 11. 후기 신고
 CREATE TABLE report (
     report_id    NUMBER         NOT NULL,
     review_id    NUMBER         NOT NULL,
@@ -193,7 +190,7 @@ CREATE TABLE report (
     CONSTRAINT report_status_ck CHECK (status IN ('WAIT', 'DONE'))
 );
 
--- 13. 선호 장르 (회원 ↔ 장르 N:M 중간 테이블)
+-- 12. 선호 장르 (회원 ↔ 장르 N:M 중간 테이블)
 CREATE TABLE member_genre (
     id         NUMBER  NOT NULL,                            -- 대체키
     member_id  NUMBER  NOT NULL,
@@ -204,7 +201,7 @@ CREATE TABLE member_genre (
     CONSTRAINT member_genre_uk       UNIQUE (member_id, genre_id)
 );
 
--- 14. 파티 (방파기)
+-- 13. 파티 (방파기)
 CREATE TABLE party (
     party_id    NUMBER         NOT NULL,
     theme_id    NUMBER         NOT NULL,
@@ -221,7 +218,7 @@ CREATE TABLE party (
     CONSTRAINT party_status_ck CHECK (status IN ('RECRUITING', 'FULL', 'CLOSED'))
 );
 
--- 15. 파티 참여자 (회원 ↔ 파티 N:M 중간 테이블. 방장도 한 줄 넣는다)
+-- 14. 파티 참여자 (회원 ↔ 파티 N:M 중간 테이블. 방장도 한 줄 넣는다)
 CREATE TABLE party_member (
     id         NUMBER        NOT NULL,                      -- 대체키
     party_id   NUMBER        NOT NULL,
@@ -233,7 +230,7 @@ CREATE TABLE party_member (
     CONSTRAINT party_member_uk       UNIQUE (party_id, member_id)  -- 같은 파티 두 번 참여 금지
 );
 
--- 16. 파티 채팅
+-- 15. 파티 채팅
 CREATE TABLE party_message (
     message_id  NUMBER          NOT NULL,
     party_id    NUMBER          NOT NULL,
@@ -246,10 +243,9 @@ CREATE TABLE party_message (
 );
 
 
--- 17. 시퀀스 생성 (테이블마다 하나)
+-- 16. 시퀀스 생성 (테이블마다 하나)
 CREATE SEQUENCE sq_member;
 CREATE SEQUENCE sq_genre;
-CREATE SEQUENCE sq_brand;
 CREATE SEQUENCE sq_store;
 CREATE SEQUENCE sq_theme;
 CREATE SEQUENCE sq_theme_genre;

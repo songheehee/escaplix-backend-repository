@@ -7,15 +7,15 @@
 --  * 맨 끝에 COMMIT 이 있어야 다른 접속(스프링 서버)에서도 보임
 
 -- 1. 회원 : 1 관리자 / 2~3 사장(점주) / 4~7 손님 / 8 정지된 손님 / 9 사장(점주)
-INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'admin',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '관리자',         'ADMIN', 'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'owner1', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '미스터리룸홍대', 'OWNER', 'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'owner2', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '열쇠공방사장',   'OWNER', 'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'user1',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '탈출왕',         'USER',  'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'user2',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '힌트없이',       'USER',  'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'user3',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '쫄보',           'USER',  'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'user4',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '방린이',         'USER',  'ACTIVE');
-INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'user5',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '정지된회원',     'USER',  'BANNED');
-INSERT INTO member (member_id, login_id, password, nickname, role, status) VALUES (sq_member.NEXTVAL, 'owner3', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '미스터리룸강남', 'OWNER', 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, business_no, status) VALUES (sq_member.NEXTVAL, 'admin',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '관리자',         'ADMIN', NULL, 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, business_no, status) VALUES (sq_member.NEXTVAL, 'owner1', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '미스터리룸홍대', 'OWNER', '101-11-00001', 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, business_no, status) VALUES (sq_member.NEXTVAL, 'owner2', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '열쇠공방사장',   'OWNER', '102-22-00002', 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, business_no, status) VALUES (sq_member.NEXTVAL, 'user1',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '탈출왕',         'USER',  NULL, 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, business_no, status) VALUES (sq_member.NEXTVAL, 'user2',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '힌트없이',       'USER',  NULL, 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, business_no, status) VALUES (sq_member.NEXTVAL, 'user3',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '쫄보',           'USER',  NULL, 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, business_no, status) VALUES (sq_member.NEXTVAL, 'user4',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '방린이',         'USER',  NULL, 'ACTIVE');
+INSERT INTO member (member_id, login_id, password, nickname, role, business_no, status) VALUES (sq_member.NEXTVAL, 'user5',  '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '정지된회원',     'USER',  NULL, 'BANNED');
+INSERT INTO member (member_id, login_id, password, nickname, role, business_no, status) VALUES (sq_member.NEXTVAL, 'owner3', '$2a$10$sQuB3Ns0/P2weZA1bJYasO2DtPkHsavuoInHwDd1lplcDjpwfmQQS', '미스터리룸강남', 'OWNER', '103-33-00003', 'ACTIVE');
 
 -- 2. 장르 : 1 공포 / 2 추리 / 3 감성 / 4 코믹 / 5 어드벤처 / 6 SF / 7 잠입
 INSERT INTO genre (genre_id, name) VALUES (sq_genre.NEXTVAL, '공포');
@@ -26,17 +26,15 @@ INSERT INTO genre (genre_id, name) VALUES (sq_genre.NEXTVAL, '어드벤처');
 INSERT INTO genre (genre_id, name) VALUES (sq_genre.NEXTVAL, 'SF');
 INSERT INTO genre (genre_id, name) VALUES (sq_genre.NEXTVAL, '잠입');
 
--- 3. 브랜드와 매장
---    브랜드 1 '미스터리룸' → 매장 1 (점주 2번), 매장 2 (점주 9번)
---    매장 3~4 '열쇠공방' : 일반 매장, 점주 3번이 두 곳 운영
+-- 3. 매장
+--    매장 1 '미스터리룸 홍대점' (점주 2번), 매장 2 '미스터리룸 강남점' (점주 9번)
+--    매장 3~4 '열쇠공방' : 점주 3번이 두 곳 운영 (사업장마다 사업자등록번호가 다름)
 --    매장 5 '어둠상자'  : 관리자가 등록한 일반 매장 (점주 없음)
-INSERT INTO brand (brand_id, name) VALUES (sq_brand.NEXTVAL, '미스터리룸');
-
-INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, 1,    2,    '미스터리룸 홍대점', '홍대', '서울 마포구 (예시 주소) 1층', 37.555100, 126.922000, '02-000-0001');
-INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, 1,    9,    '미스터리룸 강남점', '강남', '서울 강남구 (예시 주소) 2층', 37.497900, 127.027600, '02-000-0002');
-INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, NULL, 3,    '열쇠공방 건대점',   '건대', '서울 광진구 (예시 주소) 3층', 37.540400, 127.069200, '02-000-0003');
-INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, NULL, 3,    '열쇠공방 신촌점',   '신촌', '서울 서대문구 (예시 주소) 지하 1층', 37.559800, 126.942500, '02-000-0004');
-INSERT INTO store (store_id, brand_id, owner_id, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, NULL, NULL, '어둠상자 홍대점',   '홍대', '서울 마포구 (예시 주소) 지하 2층', 37.556300, 126.923600, '02-000-0005');
+INSERT INTO store (store_id, owner_id, business_no, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, 2,    '101-11-00001', '미스터리룸 홍대점', '홍대', '서울 마포구 (예시 주소) 1층', 37.555100, 126.922000, '02-000-0001');
+INSERT INTO store (store_id, owner_id, business_no, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, 9,    '103-33-00003', '미스터리룸 강남점', '강남', '서울 강남구 (예시 주소) 2층', 37.497900, 127.027600, '02-000-0002');
+INSERT INTO store (store_id, owner_id, business_no, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, 3,    '102-22-00002', '열쇠공방 건대점',   '건대', '서울 광진구 (예시 주소) 3층', 37.540400, 127.069200, '02-000-0003');
+INSERT INTO store (store_id, owner_id, business_no, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, 3,    '102-22-00004', '열쇠공방 신촌점',   '신촌', '서울 서대문구 (예시 주소) 지하 1층', 37.559800, 126.942500, '02-000-0004');
+INSERT INTO store (store_id, owner_id, business_no, name, area, address, lat, lng, phone) VALUES (sq_store.NEXTVAL, NULL, '105-55-00005', '어둠상자 홍대점',   '홍대', '서울 마포구 (예시 주소) 지하 2층', 37.556300, 126.923600, '02-000-0005');
 
 -- 4. 테마 22개
 --    1~20 : 운영 중(OPEN). 단 12번은 운영 종료(CLOSED), 17~20번은 크롤링(CRAWL)
@@ -202,11 +200,10 @@ INSERT INTO party_message (message_id, party_id, member_id, content, created_at)
 
 COMMIT;
 
--- 14. 개수 확인 (회원 9, 장르 7, 브랜드 1, 매장 5, 테마 22, 테마장르 35, 시간표 798, 찜 9,
+-- 14. 개수 확인 (회원 9, 장르 7, 매장 5, 테마 22, 테마장르 35, 시간표 798, 찜 9,
 --     후기 23, 신고 3, 선호장르 9, 파티 4, 참여자 8, 채팅 6)
 SELECT 'member' AS table_name, COUNT(*) AS cnt FROM member
 UNION ALL SELECT 'genre',         COUNT(*) FROM genre
-UNION ALL SELECT 'brand',         COUNT(*) FROM brand
 UNION ALL SELECT 'store',         COUNT(*) FROM store
 UNION ALL SELECT 'theme',         COUNT(*) FROM theme
 UNION ALL SELECT 'theme_genre',   COUNT(*) FROM theme_genre

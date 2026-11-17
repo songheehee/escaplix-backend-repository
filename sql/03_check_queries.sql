@@ -115,9 +115,8 @@ WHERE pm.member_id = 4
 
 -- C-1. 관리 매장 목록 : owner_id = 나 인 매장
 --      9번 → 매장 2 / 2번으로 바꾸면 매장 1 / 3번으로 바꾸면 매장 3, 4
-SELECT s.store_id, s.name, b.name AS brand_name
+SELECT s.store_id, s.name, s.business_no
 FROM store s
-LEFT JOIN brand b ON b.brand_id = s.brand_id
 WHERE s.owner_id = 9
 ORDER BY s.store_id;
 

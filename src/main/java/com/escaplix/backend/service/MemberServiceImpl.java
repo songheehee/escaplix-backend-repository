@@ -13,6 +13,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
+
 /**
  * MemberService 구현 (A 담당). 지금은 전부 501 "아직 구현 전". TODO 를 채우고 throw 줄을 지운다.
  * 조회는 클래스의 readOnly 트랜잭션, 저장·수정·삭제 메서드에는 @Transactional 이 붙어 있다.
@@ -30,13 +35,47 @@ public class MemberServiceImpl implements MemberService {
     private final JwtProvider jwtProvider;
     private final FileStorage fileStorage;
 
+    /** 형식 규칙: 가입 DTO(@Pattern·@Size)와 같은 규칙. 중복 확인(A-3~5)은 쿼리 파라미터라 여기서 검사 */
+    private static final Pattern LOGIN_ID = Pattern.compile("^[a-z0-9]{4,20}$");
+    private static final Pattern BIZ_NO = Pattern.compile("^\\d{3}-\\d{2}-\\d{5}$");
+    private static final String LOGIN_FAILED = "아이디 또는 비밀번호가 틀렸습니다.";
+
     @Override
     @Transactional
     public MemberIdResponse signupUser(SignupUserRequest req) {
-        // TODO(A) 아이디·닉네임 중복이면 409 (중복 확인 버튼을 눌렀어도 다시 검사)
-        // TODO(A) 비밀번호 BCrypt(passwordEncoder.encode) → MEMBER(role=USER) 저장
-        // TODO(A) 같은 트랜잭션에서 genreIds 만큼 MEMBER_GENRE 저장 (없는 장르면 400)
-        throw ApiException.notImplemented("A-1 손님 회원가입");
+        // 중복 확인 버튼을 눌렀어도 그 사이 누가 가입했을 수 있으니 다시 검사
+        if (memberRepository.existsByLoginId(req.loginId())) {
+            throw ApiException.conflict("이미 사용 중인 아이디입니다.");
+        }
+        if (memberRepository.existsByNickname(req.nickname())) {
+            throw ApiException.conflict("이미 사용 중인 닉네임입니다.");
+        }
+
+        // 장르는 저장 전에 전부 확인 (같은 번호가 두 번 와도 한 번만)
+        Set<Long> genreIds = new LinkedHashSet<>(req.genreIds() == null ? List.of() : req.genreIds());
+        if (genreIds.contains(null)) {
+            throw ApiException.badRequest("없는 장르입니다.");
+        }
+        List<Genre> genres = genreRepository.findAllById(genreIds);
+        if (genres.size() != genreIds.size()) {
+            throw ApiException.badRequest("없는 장르입니다.");
+        }
+
+        Member member = new Member();
+        member.setLoginId(req.loginId());
+        member.setPassword(passwordEncoder.encode(req.password()));
+        member.setNickname(req.nickname());
+        member.setRole(Role.USER);
+        memberRepository.save(member);
+
+        // 같은 트랜잭션: 여기서 실패하면 회원 저장도 함께 취소된다
+        for (Genre genre : genres) {
+            MemberGenre mg = new MemberGenre();
+            mg.setMember(member);
+            mg.setGenre(genre);
+            memberGenreRepository.save(mg);
+        }
+        return new MemberIdResponse(member.getMemberId());
     }
 
     @Override
@@ -50,26 +89,39 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public AvailableResponse checkLoginId(String loginId) {
-        // TODO(A) 있으면 available=false (400 아님)
-        throw ApiException.notImplemented("A-3 아이디 중복 확인");
+        if (loginId == null || !LOGIN_ID.matcher(loginId).matches()) {
+            throw ApiException.badRequest("아이디는 영문 소문자와 숫자 4~20자로 입력해 주세요.");
+        }
+        // 이미 있으면 400 이 아니라 available=false
+        return new AvailableResponse(!memberRepository.existsByLoginId(loginId));
     }
 
     @Override
     public AvailableResponse checkNickname(String nickname) {
-        throw ApiException.notImplemented("A-4 닉네임 중복 확인");
+        if (nickname == null || nickname.isBlank() || nickname.length() < 2 || nickname.length() > 20) {
+            throw ApiException.badRequest("닉네임은 2~20자로 입력해 주세요.");
+        }
+        return new AvailableResponse(!memberRepository.existsByNickname(nickname));
     }
 
     @Override
     public AvailableResponse checkBizNo(String bizNo) {
-        throw ApiException.notImplemented("A-5 사업자등록번호 중복 확인");
+        if (bizNo == null || !BIZ_NO.matcher(bizNo).matches()) {
+            throw ApiException.badRequest("사업자등록번호 형식이 올바르지 않습니다.");
+        }
+        return new AvailableResponse(!memberRepository.existsByBizNo(bizNo));
     }
 
     @Override
     public LoginResponse login(LoginRequest req) {
-        // TODO(A) loginId 로 찾고 passwordEncoder.matches 로 비교
-        // TODO(A) 없거나 틀리면 둘 다 401 "아이디 또는 비밀번호가 틀렸습니다."
-        // TODO(A) jwtProvider.create(memberId, nickname, role) 로 토큰
-        throw ApiException.notImplemented("A-6 로그인");
+        // 아이디가 없는 경우와 비밀번호가 틀린 경우를 같은 문장으로 (어느 쪽인지 알려주지 않기)
+        Member member = memberRepository.findByLoginId(req.loginId())
+                .orElseThrow(() -> ApiException.unauthorized(LOGIN_FAILED));
+        if (!passwordEncoder.matches(req.password(), member.getPassword())) {
+            throw ApiException.unauthorized(LOGIN_FAILED);
+        }
+        String token = jwtProvider.create(member.getMemberId(), member.getNickname(), member.getRole());
+        return new LoginResponse(token, member.getMemberId(), member.getNickname(), member.getRole());
     }
 
     @Override

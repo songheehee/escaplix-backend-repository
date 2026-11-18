@@ -143,9 +143,10 @@ class MemberSignupLoginTests {
                 .andReturn().getResponse().getContentAsString();
         String token = body.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
 
-        // A-7 은 아직 501 이지만, 401 이 아니라는 건 토큰이 통과했다는 뜻
+        // 받은 토큰으로 로그인이 필요한 API(A-7)를 통과
         mvc.perform(get("/api/members/me").header("Authorization", "Bearer " + token))
-                .andExpect(status().isNotImplemented());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loginId").value("login1"));
     }
 
     @Test

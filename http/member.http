@@ -34,7 +34,7 @@ Content-Type: application/json
 
 { "loginId": "nobody", "password": "1234" }
 
-### A-7 내 정보 (위 "login" 응답의 토큰 사용). 토큰 없이 보내면 401
+### A-7 내 정보 (위 "login" 응답의 토큰 사용). 토큰 없이 보내면 401. 사장(owner1)으로 로그인했으면 bizNo 도 나옴
 GET {{host}}/api/members/me
 Authorization: Bearer {{login.response.body.token}}
 
@@ -86,11 +86,66 @@ Content-Type: application/json
 
 { "loginId": "AB", "password": "1234", "nickname": "형식틀림" }
 
-### 방금 가입한 계정으로 로그인
+### 방금 가입한 계정으로 로그인 (아래 A-8·A-9 는 이 토큰 사용. 더미 계정 비번을 바꾸지 않으려고)
+# @name tester
 POST {{host}}/api/auth/login
 Content-Type: application/json
 
 { "loginId": "tester99", "password": "1234" }
+
+
+### ---------- A-8 닉네임 · A-9 비밀번호 (tester99 로) ----------
+
+### A-8 남이 쓰는 닉네임 → 409
+PUT {{host}}/api/members/me
+Authorization: Bearer {{tester.response.body.token}}
+Content-Type: application/json
+
+{ "nickname": "탈출왕" }
+
+### A-8 닉네임 바꾸기 → 200 + 새 token (프런트는 저장된 토큰을 이걸로 바꿈)
+PUT {{host}}/api/members/me
+Authorization: Bearer {{tester.response.body.token}}
+Content-Type: application/json
+
+{ "nickname": "바뀐테스터" }
+
+### A-9 현재 비밀번호 틀림 → 400 (401 아님)
+PUT {{host}}/api/members/me/password
+Authorization: Bearer {{tester.response.body.token}}
+Content-Type: application/json
+
+{ "currentPassword": "0000", "newPassword": "5678" }
+
+### A-9 지금과 같은 비밀번호 → 400
+PUT {{host}}/api/members/me/password
+Authorization: Bearer {{tester.response.body.token}}
+Content-Type: application/json
+
+{ "currentPassword": "1234", "newPassword": "1234" }
+
+### A-9 비밀번호 바꾸기 → 204 (이후 tester99 는 5678 로 로그인)
+PUT {{host}}/api/members/me/password
+Authorization: Bearer {{tester.response.body.token}}
+Content-Type: application/json
+
+{ "currentPassword": "1234", "newPassword": "5678" }
+
+### 되돌리기: 비밀번호 5678 → 1234, 닉네임 원래대로 (이 파일을 처음부터 다시 돌릴 수 있게)
+PUT {{host}}/api/members/me/password
+Authorization: Bearer {{tester.response.body.token}}
+Content-Type: application/json
+
+{ "currentPassword": "5678", "newPassword": "1234" }
+
+###
+PUT {{host}}/api/members/me
+Authorization: Bearer {{tester.response.body.token}}
+Content-Type: application/json
+
+{ "nickname": "테스트회원" }
+
+### A-2 사장 가입은 파일(사업자등록증)이 있어야 해서 여기 없음 → 테스트 MemberProfileTests 참고
 
 
 ### ---------- 테스트 회원 지우기 (SQL Developer 에서 실행) ----------

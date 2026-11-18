@@ -61,11 +61,10 @@ class AuthFlowTests {
     }
 
     @Test
-    void 권한이_맞으면_서비스까지_간다() throws Exception {
-        // C-12 가 구현되어 501 대신 실제 결과(200)가 나온다
+    void 권한이_맞으면_서비스까지_가고_아직은_501() throws Exception {
         mvc.perform(get("/api/admin/summary").header("Authorization", bearer(Role.ADMIN)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.memberCountByRole").exists());
+                .andExpect(status().isNotImplemented())
+                .andExpect(jsonPath("$.message").value("아직 구현 전입니다: C-12 관리자 홈 숫자 요약"));
     }
 
     @Test

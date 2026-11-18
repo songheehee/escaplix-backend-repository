@@ -18,7 +18,7 @@ public class PartyDeadlineScheduler {
 
     private final PartyRepository partyRepository;
 
-    @Scheduled(cron = "0 */5 * * * *")
+    @Scheduled(cron = "0 0 3 * * *", zone = "Asia/Seoul") // 새벽 3시에 한번
     @Transactional
     public void closeExpired() {
         int n = partyRepository.updateStatusWhereDeadlinePassed(PartyStatus.RECRUITING, PartyStatus.CLOSED, LocalDateTime.now());

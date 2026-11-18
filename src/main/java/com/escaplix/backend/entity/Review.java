@@ -47,7 +47,11 @@ public class Review {
     @Column(name = "player_count", nullable = false)
     private Integer playerCount;
 
-    /** 남은 시간(초). 실패면 0 (CHECK review_fail_ck) */
+    /** 남은 시간 분. 실패면 0 */
+    @Column(name = "remain_minutes")
+    private Integer remainMinutes;
+
+    /** 남은 시간 초 0~59. 실패면 0 (CHECK review_sec_ck, review_fail_ck) */
     @Column(name = "remain_seconds")
     private Integer remainSeconds;
 

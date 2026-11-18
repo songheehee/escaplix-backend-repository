@@ -14,8 +14,11 @@ public record ReviewCreateRequest(
         Integer hintCount,
         @NotNull(message = "플레이 인원을 입력해 주세요.") @Min(value = 1, message = "플레이 인원은 1~20명입니다.") @Max(value = 20, message = "플레이 인원은 1~20명입니다.")
         Integer playerCount,
-        /** 남은 시간(초). 실패면 0, 성공이면 0 ~ playMinutes*60 (상한은 서비스에서) */
-        @NotNull(message = "남은 시간을 입력해 주세요.") @Min(value = 0, message = "남은 시간은 0 이상입니다.")
+        /** 남은 시간 분. 실패면 0. 분*60+초 <= playMinutes*60 (상한은 서비스에서) */
+        @NotNull(message = "남은 시간(분)을 입력해 주세요.") @Min(value = 0, message = "남은 시간(분)은 0 이상입니다.")
+        Integer remainMinutes,
+        /** 남은 시간 초 0~59. 실패면 0 */
+        @NotNull(message = "남은 시간(초)을 입력해 주세요.") @Min(value = 0, message = "초는 0~59입니다.") @Max(value = 59, message = "초는 0~59입니다.")
         Integer remainSeconds,
         /** 비우면 작성일 (결정 R1) */
         @PastOrPresent(message = "플레이한 날은 오늘이거나 그 이전이어야 합니다.")

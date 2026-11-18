@@ -192,36 +192,36 @@ INSERT INTO wishlist (wish_id, member_id, theme_id) VALUES (7, 9, 6);
 INSERT INTO wishlist (wish_id, member_id, theme_id) VALUES (8, 10, 3);
 
 
--- 10. 후기 (VISIBLE 13 / HIDDEN 1). 실패(N)면 remain_seconds = 0
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (1, 5, 1, 5, 'Y', 1, 2, 754, TRUNC(SYSDATE) - 20, '분위기가 정말 무서워요. 인형 연출이 최고였습니다.');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (2, 7, 1, 4, 'Y', 2, 3, 180, TRUNC(SYSDATE) - 15, '문제 흐름이 깔끔해요. 공포 연출은 생각보다 순한 편.');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (3, 10, 1, 3, 'N', 4, 2, 0, TRUNC(SYSDATE) - 10, '마지막 방이 너무 어려웠어요. 그래도 재밌었습니다.');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (4, 7, 2, 5, 'Y', 0, 2, 1265, TRUNC(SYSDATE) - 30, '추리 좋아하면 무조건 추천. 노힌트 성공!');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (5, 6, 2, 4, 'Y', 3, 4, 300, TRUNC(SYSDATE) - 12, '4명이 딱 적당했어요.');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (6, 5, 3, 5, 'Y', 2, 2, 95, TRUNC(SYSDATE) - 8, '1분 35초 남기고 겨우 탈출. 난이도 5 인정합니다.');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (7, 8, 3, 2, 'N', 5, 3, 0, TRUNC(SYSDATE) - 5, '무서워서 아무것도 못 했어요. 방린이는 비추.');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (8, 6, 5, 5, 'Y', 1, 2, 600, TRUNC(SYSDATE) - 25, '마지막에 울었어요. 스토리가 정말 좋아요.');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (9, 9, 5, 4, 'Y', 2, 2, 420, TRUNC(SYSDATE) - 3, '인테리어가 예뻐요. 문제는 무난한 편.');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (10, 10, 6, 4, 'Y', 1, 4, 1500, TRUNC(SYSDATE) - 18, '장치가 많아서 4명 이상 추천합니다.');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (11, 8, 7, 5, 'Y', 3, 5, 900, TRUNC(SYSDATE) - 7, '첫 방탈출이었는데 너무 재밌었어요!');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (12, 5, 4, 4, 'Y', 1, 2, 800, TRUNC(SYSDATE) - 2, '가볍게 웃으면서 하기 좋아요.');
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content) VALUES
-  (13, 9, 8, 4, 'Y', 2, 2, 300, TRUNC(SYSDATE) - 200, '운영 종료라니 아쉽네요.');
+-- 10. 후기 (VISIBLE 13 / HIDDEN 1). 실패(N)면 remain_minutes = remain_seconds = 0
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (1, 5, 1, 5, 'Y', 1, 2, 12, 34, TRUNC(SYSDATE) - 20, '분위기가 정말 무서워요. 인형 연출이 최고였습니다.');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (2, 7, 1, 4, 'Y', 2, 3, 3, 0, TRUNC(SYSDATE) - 15, '문제 흐름이 깔끔해요. 공포 연출은 생각보다 순한 편.');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (3, 10, 1, 3, 'N', 4, 2, 0, 0, TRUNC(SYSDATE) - 10, '마지막 방이 너무 어려웠어요. 그래도 재밌었습니다.');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (4, 7, 2, 5, 'Y', 0, 2, 21, 5, TRUNC(SYSDATE) - 30, '추리 좋아하면 무조건 추천. 노힌트 성공!');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (5, 6, 2, 4, 'Y', 3, 4, 5, 0, TRUNC(SYSDATE) - 12, '4명이 딱 적당했어요.');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (6, 5, 3, 5, 'Y', 2, 2, 1, 35, TRUNC(SYSDATE) - 8, '1분 35초 남기고 겨우 탈출. 난이도 5 인정합니다.');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (7, 8, 3, 2, 'N', 5, 3, 0, 0, TRUNC(SYSDATE) - 5, '무서워서 아무것도 못 했어요. 방린이는 비추.');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (8, 6, 5, 5, 'Y', 1, 2, 10, 0, TRUNC(SYSDATE) - 25, '마지막에 울었어요. 스토리가 정말 좋아요.');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (9, 9, 5, 4, 'Y', 2, 2, 7, 0, TRUNC(SYSDATE) - 3, '인테리어가 예뻐요. 문제는 무난한 편.');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (10, 10, 6, 4, 'Y', 1, 4, 25, 0, TRUNC(SYSDATE) - 18, '장치가 많아서 4명 이상 추천합니다.');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (11, 8, 7, 5, 'Y', 3, 5, 15, 0, TRUNC(SYSDATE) - 7, '첫 방탈출이었는데 너무 재밌었어요!');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (12, 5, 4, 4, 'Y', 1, 2, 13, 20, TRUNC(SYSDATE) - 2, '가볍게 웃으면서 하기 좋아요.');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content) VALUES
+  (13, 9, 8, 4, 'Y', 2, 2, 5, 0, TRUNC(SYSDATE) - 200, '운영 종료라니 아쉽네요.');
 -- 신고 처리로 숨긴 후기 (트리거 집계에서 빠짐)
-INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_seconds, played_date, content, status) VALUES
-  (14, 9, 4, 1, 'N', 6, 2, 0, TRUNC(SYSDATE) - 1, '여기 말고 OO역 다른 매장이 훨씬 좋아요. 링크 참고하세요.', 'HIDDEN');
+INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count, player_count, remain_minutes, remain_seconds, played_date, content, status) VALUES
+  (14, 9, 4, 1, 'N', 6, 2, 0, 0, TRUNC(SYSDATE) - 1, '여기 말고 OO역 다른 매장이 훨씬 좋아요. 링크 참고하세요.', 'HIDDEN');
 
 
 -- 11. 후기 신고

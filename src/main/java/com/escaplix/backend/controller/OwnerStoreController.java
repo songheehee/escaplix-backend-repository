@@ -42,15 +42,17 @@ public class OwnerStoreController {
     @PostMapping(value = "/api/owner/stores", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @Auth({Role.OWNER, Role.ADMIN})
-    public StoreSaveResponse createStore(LoginMember login, @Valid @ModelAttribute StoreForm form, @RequestPart(value = "bizPlaceFile", required = false) MultipartFile bizPlaceFile) {
-        return ownerStoreService.createStore(login, form, bizPlaceFile);
+    public StoreSaveResponse createStore(LoginMember login, @Valid @ModelAttribute StoreForm form, @RequestPart(value = "bizPlaceFile", required = false) MultipartFile bizPlaceFile,
+                                         @RequestPart(value = "storePhoto", required = false) MultipartFile storePhoto) {
+        return ownerStoreService.createStore(login, form, bizPlaceFile, storePhoto);
     }
 
     /** C-4 매장 수정 · OWNER* · 200 */
     @PutMapping(value = "/api/owner/stores/{storeId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Auth({Role.OWNER, Role.ADMIN})
-    public StoreSaveResponse updateStore(LoginMember login, @PathVariable Long storeId, @Valid @ModelAttribute StoreForm form, @RequestPart(value = "bizPlaceFile", required = false) MultipartFile bizPlaceFile) {
-        return ownerStoreService.updateStore(login, storeId, form, bizPlaceFile);
+    public StoreSaveResponse updateStore(LoginMember login, @PathVariable Long storeId, @Valid @ModelAttribute StoreForm form, @RequestPart(value = "bizPlaceFile", required = false) MultipartFile bizPlaceFile,
+                                         @RequestPart(value = "storePhoto", required = false) MultipartFile storePhoto) {
+        return ownerStoreService.updateStore(login, storeId, form, bizPlaceFile, storePhoto);
     }
 
     /** C-5 매장의 테마 목록 · OWNER* · 200 */

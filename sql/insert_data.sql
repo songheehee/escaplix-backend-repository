@@ -66,64 +66,64 @@ INSERT INTO holiday (holiday_date, name) VALUES (DATE '2027-12-27', '성탄절 �
 
 
 -- 4. 매장 (승인 4 : 사장 3 + 관리자 직접 등록 1 / 대기 1 / 반려 1)
-INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
+INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
   (1, 2, '미로이스케이프 홍대점', '홍대', '서울 마포구 와우산로 00, 지하 1층', '02-111-1111', 'https://miro-escape.example.com',
-   '10:00 ~ 23:00 (연중무휴)', '홍대입구역 9번 출구 도보 5분. 공포와 추리 테마 전문 매장입니다.', 37.556100, 126.923500, '110-81-00001', '/private/store/1.pdf', 'APPROVED');
-INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
+   '10:00 ~ 23:00 (연중무휴)', '홍대입구역 9번 출구 도보 5분. 공포와 추리 테마 전문 매장입니다.', '/uploads/stores/common-01.jpg', 37.556100, 126.923500, '110-81-00001', '/private/store/1.pdf', 'APPROVED');
+INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
   (2, 3, '타임락 강남점', '강남', '서울 강남구 테헤란로 00, 3층', '02-222-2222', 'https://timelock.example.com',
-   '11:00 ~ 24:00 (월요일 휴무)', '강남역 11번 출구 바로 앞. 고난도 테마가 많은 매장입니다.', 37.498000, 127.027600, '120-81-00002', '/private/store/2.pdf', 'APPROVED');
-INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
+   '11:00 ~ 24:00 (월요일 휴무)', '강남역 11번 출구 바로 앞. 고난도 테마가 많은 매장입니다.', '/uploads/stores/common-05.jpg', 37.498000, 127.027600, '120-81-00002', '/private/store/2.pdf', 'APPROVED');
+INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
   (3, 4, '퍼즐하우스 건대점', '건대', '서울 광진구 아차산로 00, 2층', '02-333-3333', 'https://puzzlehouse.example.com',
-   '12:00 ~ 23:00 (연중무휴)', '건대입구역 2번 출구 도보 3분. 감성 스토리와 SF 테마를 운영합니다.', 37.540400, 127.069200, '130-81-00003', '/private/store/3.pdf', 'APPROVED');
+   '12:00 ~ 23:00 (연중무휴)', '건대입구역 2번 출구 도보 3분. 감성 스토리와 SF 테마를 운영합니다.', '/uploads/stores/common-06.jpg', 37.540400, 127.069200, '130-81-00003', '/private/store/3.pdf', 'APPROVED');
 -- 관리자가 직접 등록한 매장 (owner_id NULL, 사업장등록증 없음)
-INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
+INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
   (4, NULL, '비밀의방 신촌점', '신촌', '서울 서대문구 연세로 00, 4층', '02-444-4444', 'https://secretroom.example.com',
-   '13:00 ~ 22:00 (화요일 휴무)', '신촌역 3번 출구 도보 7분. 처음 하는 분도 즐기기 좋은 매장입니다.', 37.555900, 126.936900, '140-81-00004', NULL, 'APPROVED');
+   '13:00 ~ 22:00 (화요일 휴무)', '신촌역 3번 출구 도보 7분. 처음 하는 분도 즐기기 좋은 매장입니다.', '/uploads/stores/common-04.jpg', 37.555900, 126.936900, '140-81-00004', NULL, 'APPROVED');
 -- 승인 대기
-INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
+INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
   (5, 2, '미로이스케이프 강남점', '강남', '서울 강남구 강남대로 00, 5층', '02-555-5555', 'https://miro-escape.example.com/gangnam',
-   '10:00 ~ 23:00 (연중무휴)', '미로이스케이프 2호점입니다. 12월 오픈 예정입니다.', 37.501200, 127.025900, '150-81-00005', '/private/store/5.pdf', 'PENDING');
+   '10:00 ~ 23:00 (연중무휴)', '미로이스케이프 2호점입니다. 12월 오픈 예정입니다.', '/uploads/stores/common-07.jpg', 37.501200, 127.025900, '150-81-00005', '/private/store/5.pdf', 'PENDING');
 -- 반려
-INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, lat, lng, biz_place_no, biz_place_file_path, status, reject_reason) VALUES
+INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status, reject_reason) VALUES
   (6, 4, '퍼즐하우스 신촌점', '신촌', '서울 서대문구 명물길 00, 2층', '02-666-6666', 'https://puzzlehouse.example.com/sinchon',
-   '12:00 ~ 23:00 (연중무휴)', '퍼즐하우스 2호점입니다.', 37.557500, 126.938000, '160-81-00006', '/private/store/6.pdf', 'REJECTED',
+   '12:00 ~ 23:00 (연중무휴)', '퍼즐하우스 2호점입니다.', '/uploads/stores/common-03.jpg', 37.557500, 126.938000, '160-81-00006', '/private/store/6.pdf', 'REJECTED',
    '사업장등록증의 주소와 입력한 주소가 다릅니다. 확인 후 다시 신청해 주세요.');
 
 
 -- 5. 테마 (OPEN 7 / CLOSED 1 / PENDING 1 / REJECTED 1)
 INSERT INTO theme (theme_id, store_id, title, description, difficulty, play_minutes, min_people, max_people, price, poster_url, booking_url, source, status) VALUES
   (1, 1, '저주받은 인형의 집', '버려진 인형 공방에 갇혔다. 인형들이 움직이기 전에 빠져나가야 한다.', 4, 60, 2, 4, 23000,
-   '/upload/theme/1.jpg', 'https://miro-escape.example.com/book/1', 'OWNER', 'OPEN');
+   '/uploads/posters/horror-03.jpg', 'https://miro-escape.example.com/book/1', 'OWNER', 'OPEN');
 INSERT INTO theme (theme_id, store_id, title, description, difficulty, play_minutes, min_people, max_people, price, poster_url, booking_url, source, status) VALUES
   (2, 1, '사라진 탐정', '실종된 명탐정의 사무실. 그가 남긴 단서로 마지막 사건을 해결하라.', 3, 70, 2, 5, 22000,
-   '/upload/theme/2.jpg', 'https://miro-escape.example.com/book/2', 'OWNER', 'OPEN');
+   '/uploads/posters/mystery-01.jpg', 'https://miro-escape.example.com/book/2', 'OWNER', 'OPEN');
 INSERT INTO theme (theme_id, store_id, title, description, difficulty, play_minutes, min_people, max_people, price, poster_url, booking_url, source, status) VALUES
   (3, 2, '자정의 병동', '폐쇄된 정신병원 3층. 자정이 되기 전에 탈출하지 못하면 영영 나갈 수 없다.', 5, 75, 2, 4, 25000,
-   '/upload/theme/3.jpg', 'https://timelock.example.com/book/3', 'OWNER', 'OPEN');
+   '/uploads/posters/horror-01.jpg', 'https://timelock.example.com/book/3', 'OWNER', 'OPEN');
 INSERT INTO theme (theme_id, store_id, title, description, difficulty, play_minutes, min_people, max_people, price, poster_url, booking_url, source, status) VALUES
   (4, 2, '고양이 탐정 사무소', '생선 도둑을 잡아라! 고양이 탐정과 함께하는 유쾌한 추리.', 2, 60, 2, 6, 20000,
-   '/upload/theme/4.jpg', 'https://timelock.example.com/book/4', 'OWNER', 'OPEN');
+   '/uploads/posters/comic-05.jpg', 'https://timelock.example.com/book/4', 'OWNER', 'OPEN');
 INSERT INTO theme (theme_id, store_id, title, description, difficulty, play_minutes, min_people, max_people, price, poster_url, booking_url, source, status) VALUES
   (5, 3, '별을 삼킨 소년', '밤하늘에서 별이 하나씩 사라진다. 소년의 기억을 따라가는 감성 테마.', 3, 70, 2, 4, 22000,
-   '/upload/theme/5.jpg', 'https://puzzlehouse.example.com/book/5', 'OWNER', 'OPEN');
+   '/uploads/posters/emotional-07.jpg', 'https://puzzlehouse.example.com/book/5', 'OWNER', 'OPEN');
 INSERT INTO theme (theme_id, store_id, title, description, difficulty, play_minutes, min_people, max_people, price, poster_url, booking_url, source, status) VALUES
   (6, 3, '우주정거장 탈출', '산소가 새고 있다. 80분 안에 탈출선을 가동하라.', 4, 80, 3, 6, 24000,
-   '/upload/theme/6.jpg', 'https://puzzlehouse.example.com/book/6', 'OWNER', 'OPEN');
+   '/uploads/posters/sf-01.jpg', 'https://puzzlehouse.example.com/book/6', 'OWNER', 'OPEN');
 INSERT INTO theme (theme_id, store_id, title, description, difficulty, play_minutes, min_people, max_people, price, poster_url, booking_url, source, status) VALUES
   (7, 4, '해적왕의 보물', '전설의 해적선에 숨겨진 보물 지도를 찾아라. 입문자 추천.', 2, 60, 2, 5, 21000,
-   '/upload/theme/7.jpg', 'https://secretroom.example.com/book/7', 'ADMIN', 'OPEN');
+   '/uploads/posters/adventure-04.jpg', 'https://secretroom.example.com/book/7', 'ADMIN', 'OPEN');
 -- 운영 종료 (크롤링으로 들어온 테마)
 INSERT INTO theme (theme_id, store_id, title, description, difficulty, play_minutes, min_people, max_people, price, poster_url, booking_url, source, status) VALUES
   (8, 4, '마지막 기차', '종착역까지 남은 시간 60분. 기차에서 만난 사람들의 이야기.', 3, 60, 2, 4, 21000,
-   '/upload/theme/8.jpg', 'https://secretroom.example.com/book/8', 'CRAWL', 'CLOSED');
+   '/uploads/posters/emotional-05.jpg', 'https://secretroom.example.com/book/8', 'CRAWL', 'CLOSED');
 -- 승인 대기
 INSERT INTO theme (theme_id, store_id, title, description, difficulty, play_minutes, min_people, max_people, price, poster_url, booking_url, source, status) VALUES
   (9, 1, '심야 라디오', '새벽 3시, 라디오에서 내 이름이 불렸다.', 3, 70, 2, 4, 23000,
-   '/upload/theme/9.jpg', 'https://miro-escape.example.com/book/9', 'OWNER', 'PENDING');
+   '/uploads/posters/mystery-06.jpg', 'https://miro-escape.example.com/book/9', 'OWNER', 'PENDING');
 -- 반려
 INSERT INTO theme (theme_id, store_id, title, description, difficulty, play_minutes, min_people, max_people, price, poster_url, booking_url, source, status, reject_reason) VALUES
   (10, 3, '연구소 B-13', '봉인된 연구소에서 실험체가 탈출했다.', 4, 70, 2, 4, 23000,
-   '/upload/theme/10.jpg', 'https://puzzlehouse.example.com/book/10', 'OWNER', 'REJECTED',
+   '/uploads/posters/sf-06.jpg', 'https://puzzlehouse.example.com/book/10', 'OWNER', 'REJECTED',
    '테마 사진이 다른 매장 이미지와 같습니다. 직접 찍은 사진으로 다시 올려 주세요.');
 
 

@@ -45,13 +45,23 @@ public class WebConfig implements WebMvcConfigurer {
         resolvers.add(loginMemberArgumentResolver);
     }
 
-    /** 테마 사진만 공개 주소로. 사업자·사업장 등록증(private 폴더)은 절대 여기 넣지 않는다 */
+    /**
+     * 공개 사진만 /uploads/** 로 내려 준다. 사업자·사업장 등록증(private 폴더)은 절대 여기 넣지 않는다
+     *   /uploads/posters/{파일}  테마 사진
+     *   /uploads/stores/{파일}   매장 사진
+     * 아래 순서로 찾는다
+     *   1) {app.upload.public-dir}/     사장·관리자가 올린 사진 (맨 위 uploads/ 폴더, git 에 안 올림)
+     *   2) classpath:/uploads/          더미 데이터 사진 (src/main/resources/uploads/, git 에 올림)
+     */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String location = Path.of(publicDir, "posters").toAbsolutePath().toUri().toString();
-        if (!location.endsWith("/")) {
-            location += "/";
+        for (String folder : new String[] {"posters", "stores"}) {
+            String location = Path.of(publicDir, folder).toAbsolutePath().toUri().toString();
+            if (!location.endsWith("/")) {
+                location += "/";
+            }
+            registry.addResourceHandler("/uploads/" + folder + "/**")
+                    .addResourceLocations(location, "classpath:/uploads/" + folder + "/");
         }
-        registry.addResourceHandler("/uploads/posters/**").addResourceLocations(location);
     }
 }

@@ -39,8 +39,9 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
 
     @Override
     @Transactional
-    public StoreSaveResponse createStore(LoginMember login, StoreForm form, MultipartFile bizPlaceFile) {
+    public StoreSaveResponse createStore(LoginMember login, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto) {
         // TODO(C) 사업장 번호 중복 409, lat·lng 한쪽만 있으면 400
+        // TODO(C) storePhoto(매장 사진, 선택)가 있으면 fileStorage.saveStorePhoto(storePhoto) → store.photoUrl
         // TODO(C) 사장: bizPlaceFile 필수 → savePrivate(.., "biz-place"), owner=나, PENDING
         // TODO(C) 관리자: 파일 생략 가능, owner=null, APPROVED (결정 S3)
         throw ApiException.notImplemented("C-3 매장 등록");
@@ -48,9 +49,9 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
 
     @Override
     @Transactional
-    public StoreSaveResponse updateStore(LoginMember login, Long storeId, StoreForm form, MultipartFile bizPlaceFile) {
+    public StoreSaveResponse updateStore(LoginMember login, Long storeId, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto) {
         // TODO(C) 사장이면 store.owner.memberId == login.memberId() 아니면 403 (관리자는 owner 가 null 인 매장만)
-        // TODO(C) 파일 비우면 기존 파일 유지
+        // TODO(C) 파일 비우면 기존 파일 유지 (bizPlaceFile, storePhoto 둘 다)
         // TODO(C) 사장이 수정하면 무조건 PENDING + rejectReason 비움 (결정 S1). 관리자는 APPROVED 유지
         throw ApiException.notImplemented("C-4 매장 수정");
     }

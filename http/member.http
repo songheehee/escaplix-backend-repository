@@ -1,0 +1,99 @@
+### =====================================================================
+### A · 회원 API 손으로 테스트하기 (VS Code 확장 "REST Client" 필요)
+###  1) 서버 켜기: ./gradlew bootRun (Git Bash) / .\gradlew bootRun (PowerShell)
+###  2) 요청 위의 "Send Request" 클릭 → 오른쪽에 응답
+###  3) 로그인을 먼저 보내면 아래 요청들에 토큰이 자동으로 들어감
+###  더미 계정 (비밀번호 모두 1234): admin / owner1~owner3 / user1~user6
+###  직접 가입한 회원은 DB에 남음 → 지우려면 맨 아래 SQL 참고
+### =====================================================================
+
+@host = http://localhost:8081
+
+### A-6 로그인 (손님) → 200 + token
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "loginId": "user1", "password": "1234" }
+
+### A-6 로그인 (사장 / 관리자로 바꿔보기: owner1, admin)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "loginId": "owner1", "password": "1234" }
+
+### A-6 비밀번호 틀림 → 401 "아이디 또는 비밀번호가 틀렸습니다."
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "loginId": "user1", "password": "0000" }
+
+### A-6 없는 아이디 → 위와 같은 401
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "loginId": "nobody", "password": "1234" }
+
+### A-7 내 정보 (위 "login" 응답의 토큰 사용). 토큰 없이 보내면 401
+GET {{host}}/api/members/me
+Authorization: Bearer {{login.response.body.token}}
+
+
+### ---------- A-3 ~ A-5 중복 확인 ----------
+
+### A-3 아이디: 있음 → available=false
+GET {{host}}/api/members/check-login-id?loginId=user1
+
+### A-3 아이디: 없음 → available=true
+GET {{host}}/api/members/check-login-id?loginId=tester99
+
+### A-3 형식 틀림 → 400
+GET {{host}}/api/members/check-login-id?loginId=AB
+
+### A-4 닉네임: 있음 → available=false
+GET {{host}}/api/members/check-nickname?nickname=관리자
+
+### A-5 사업자등록번호: 있음 → available=false
+GET {{host}}/api/members/check-biz-no?bizNo=101-11-11111
+
+### A-5 형식 틀림 → 400
+GET {{host}}/api/members/check-biz-no?bizNo=1234567890
+
+
+### ---------- A-1 손님 가입 ----------
+
+### A-1 가입 → 201 + memberId
+POST {{host}}/api/members/user
+Content-Type: application/json
+
+{ "loginId": "tester99", "password": "1234", "nickname": "테스트회원", "genreIds": [1, 3] }
+
+### A-1 같은 아이디로 다시 → 409 "이미 사용 중인 아이디입니다."
+POST {{host}}/api/members/user
+Content-Type: application/json
+
+{ "loginId": "tester99", "password": "1234", "nickname": "다른이름" }
+
+### A-1 없는 장르 → 400 "없는 장르입니다." (회원도 저장 안 됨)
+POST {{host}}/api/members/user
+Content-Type: application/json
+
+{ "loginId": "tester98", "password": "1234", "nickname": "장르없음", "genreIds": [999] }
+
+### A-1 아이디 형식 틀림 → 400
+POST {{host}}/api/members/user
+Content-Type: application/json
+
+{ "loginId": "AB", "password": "1234", "nickname": "형식틀림" }
+
+### 방금 가입한 계정으로 로그인
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "loginId": "tester99", "password": "1234" }
+
+
+### ---------- 테스트 회원 지우기 (SQL Developer 에서 실행) ----------
+# DELETE FROM member_genre WHERE member_id IN (SELECT member_id FROM member WHERE login_id LIKE 'tester%');
+# DELETE FROM member WHERE login_id LIKE 'tester%';
+# COMMIT;

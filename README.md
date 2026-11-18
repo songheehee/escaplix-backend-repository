@@ -200,7 +200,7 @@ throw ApiException.conflict("이미 사용 중인 아이디입니다.");    // �
 | 대상 | 규칙 | 예 |
 | --- | --- | --- |
 | 패키지 | 소문자 (수업과 같은 이름) | `control`, `service`, `repository`, `entity`, `dto` |
-| 컨트롤러 / 서비스 | `XxxController` / `XxxService` + `XxxServiceImp` | `PartyController`, `PartyServiceImp` |
+| 컨트롤러 / 서비스 | `XxxController` / `XxxService` + `XxxServiceImp` | `PartyController`, `PartyServiceImpl` |
 | DTO | 요청 `XxxRequest`(폼은 `XxxForm`), 응답 `XxxResponse` · 목록 한 줄 `XxxItem`. 모두 `record` | `PartyCreateRequest`, `PartyListItem` |
 | 메서드·변수 | camelCase, 동사로 시작 | `findParties`, `join` |
 | 상수 | UPPER_SNAKE | `MAX_BYTES` |

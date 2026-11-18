@@ -2,21 +2,11 @@ package com.escaplix.backend.service;
 
 import com.escaplix.backend.common.*;
 import com.escaplix.backend.common.auth.*;
-import com.escaplix.backend.common.file.FileDownload;
-import com.escaplix.backend.dto.admin.*;
-import com.escaplix.backend.dto.member.*;
 import com.escaplix.backend.dto.owner.*;
-import com.escaplix.backend.dto.party.*;
-import com.escaplix.backend.dto.review.*;
-import com.escaplix.backend.dto.store.*;
-import com.escaplix.backend.dto.theme.*;
-import com.escaplix.backend.entity.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.escaplix.backend.common.file.FileStorage;
-import com.escaplix.backend.common.time.DayTypeResolver;
 import com.escaplix.backend.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class OwnerThemeServiceImp implements OwnerThemeService {
+public class OwnerThemeServiceImpl implements OwnerThemeService {
 
     private final ThemeRepository themeRepository;
     private final ThemeGenreRepository themeGenreRepository;

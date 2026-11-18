@@ -1,28 +1,10 @@
-package com.escaplix.backend.control;
+package com.escaplix.backend.controller;
 
-import com.escaplix.backend.common.*;
-import com.escaplix.backend.common.auth.*;
-import com.escaplix.backend.common.file.FileDownload;
-import com.escaplix.backend.dto.admin.*;
-import com.escaplix.backend.dto.member.*;
-import com.escaplix.backend.dto.owner.*;
-import com.escaplix.backend.dto.party.*;
-import com.escaplix.backend.dto.review.*;
 import com.escaplix.backend.dto.store.*;
-import com.escaplix.backend.dto.theme.*;
-import com.escaplix.backend.entity.*;
 import com.escaplix.backend.service.*;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.util.List;
 
 /**

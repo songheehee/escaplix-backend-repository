@@ -61,28 +61,99 @@
 
 ### 2-1. DB 만들기 (Oracle XE 11g, hr 계정)
 
-1. SQL Developer에서 `sql/create_tables.sql`을 **스크립트 실행(F5)** 으로 돌립니다.
-   - 처음에는 DROP 문에서 "없음" 에러가 나는데, 무시하면 됩니다.
-   - 맨 아래 트리거 두 개도 같이 만들어지는지 확인하세요.
-2. 더미 데이터 `sql/02_dummy_data.sql`은 **아직 없습니다.** [5번 할 일](#5-아직-정해지지-않은-것--할-일)을 보세요.
+레포 폴더(`escaplix-backend-repository`)에서 순서대로 실행합니다. **쓰는 터미널에 맞는 쪽만** 따라 하세요.
+
+> 내 터미널 구분법: 프롬프트가 `$`로 끝나면 **Git Bash**, `PS C:\...>`로 시작하면 **PowerShell**.
+> 서로의 명령을 섞어 쓰면 안 됩니다. (Git Bash에 `$env:...`를 치면 `command not found`가 나고 한글이 깨집니다)
+
+**① hr 계정 잠금 풀기 (처음 한 번)**
+
+XE 11g는 hr 계정이 잠겨 있습니다(`ORA-28000`). SQL Developer에서 **SYSTEM**으로 접속해 실행합니다.
+
+```sql
+ALTER USER hr ACCOUNT UNLOCK IDENTIFIED BY 원하는비번;
+```
+
+**② 테이블 만들기 → 더미 데이터 넣기**
+
+두 SQL 파일은 UTF-8입니다. Windows Oracle 기본값(MSWIN949)으로 읽으면 한글 주석·문자열이 깨져서 `ORA-00922`·`ORA-01756`이 나고 **일부만 들어갑니다.**
+그래서 실행 전에 `NLS_LANG`을 UTF-8로 바꿉니다. (그 터미널 창에서만 적용되고, 창을 닫으면 사라집니다. PC 설정은 안 바뀝니다)
+
+Git Bash:
+
+```bash
+export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+echo exit | MSYS_NO_PATHCONV=1 sqlplus -S 'hr/비번@localhost:1521/xe' @sql/create_tables.sql
+echo exit | MSYS_NO_PATHCONV=1 sqlplus -S 'hr/비번@localhost:1521/xe' @sql/insert_data.sql
+```
+
+PowerShell:
+
+```powershell
+$env:NLS_LANG="AMERICAN_AMERICA.AL32UTF8"
+sqlplus 'hr/비번@localhost:1521/xe' '@sql/create_tables.sql'   # 끝나면 exit 입력
+sqlplus 'hr/비번@localhost:1521/xe' '@sql/insert_data.sql'     # 끝나면 exit 입력
+```
+
+- `비번` 자리에 ①에서 정한 hr 비밀번호를 넣습니다. 작은따옴표 안이라 특수문자가 있어도 됩니다.
+- Git Bash의 `echo exit |`는 끝나면 `SQL>`에 멈추지 않고 빠져나오게 합니다. PowerShell은 이걸 붙이면 `SP2-0042` 경고가 나서 빼고, 끝난 뒤 `SQL>`에 `exit`를 직접 칩니다.
+- `sqlplus`를 못 찾으면 전체 경로로: Git Bash `/c/oraclexe/app/oracle/product/11.2.0/server/bin/sqlplus`, PowerShell `& "C:\oraclexe\app\oracle\product\11.2.0\server\bin\sqlplus.exe"`
+- `create_tables.sql`을 **처음** 돌릴 때 나오는 `ORA-00942`·`ORA-02289`(지울 대상 없음)는 정상입니다.
+- 성공 기준: Table created 14개, Sequence created 13개, Trigger created 2개. `insert_data.sql`은 에러 없이 `Commit complete.`
+- **데이터가 꼬였으면 두 파일을 처음부터 다시** 돌립니다. `create_tables.sql`은 맨 앞에서 우리 테이블을 지우고 새로 만듭니다(hr 예제 테이블 EMPLOYEES 등은 안 건드림).
+- SQL Developer로 하고 싶으면: 도구 → 환경설정 → 환경 → 인코딩을 `UTF-8`로 바꾼 뒤 파일을 다시 열고 F5(스크립트 실행).
+
+더미 계정 (비밀번호 모두 `1234`): `admin`(관리자), `owner1`~`owner3`(사장), `user1`~`user6`(손님)
 
 ### 2-2. 내 PC 전용 설정 (커밋 금지)
+
+Git Bash:
 
 ```bash
 cp src/main/resources/application-local.properties.example src/main/resources/application-local.properties
 ```
 
-복사한 파일에 DB 비밀번호와 `jwt.secret`(32글자 이상 아무 문자열)을 적습니다. 이 파일은 `.gitignore`에 있어서 커밋되지 않습니다.
+PowerShell:
+
+```powershell
+Copy-Item src\main\resources\application-local.properties.example src\main\resources\application-local.properties
+```
+
+복사한 파일에 hr 비밀번호와 `jwt.secret`(32글자 이상 아무 문자열)을 적습니다. 이 파일은 `.gitignore`에 있어서 커밋되지 않습니다.
 
 ### 2-3. 실행·테스트
 
+Git Bash:
+
 ```bash
-./gradlew bootRun     # http://localhost:8080
+./gradlew bootRun     # http://localhost:8081
 ./gradlew test        # Oracle 없이 H2로: 스프링이 뜨는지 + 토큰·권한·에러 형식 테스트
 ```
 
+PowerShell:
+
+```powershell
+.\gradlew bootRun     # http://localhost:8081
+.\gradlew test
+```
+
+- `Started BackendApplication`이 나오면 성공. `http://localhost:8081/api/members/me` → `{"message":"로그인이 필요합니다."}`면 정상입니다.
+- 포트가 **8081**인 이유: Oracle XE가 자체 웹서버로 8080을 이미 씁니다.
+- Oracle 11g라서 `OracleLegacyDialect`를 씁니다(`application.properties`). 기본 방언은 11g에서 페이징 SQL이 `ORA-00933`으로 깨집니다.
 - 프런트(Live Server `127.0.0.1:5500`)에서 부르면 CORS가 이미 열려 있습니다.
 - 아직 구현하지 않은 API는 **501** `{"message": "아직 구현 전입니다: A-1 손님 회원가입"}`로 답합니다.
+
+**자주 나는 에러**
+
+| 에러 | 원인 → 해결 |
+| --- | --- |
+| `ORA-28000` / `ORA-01017` | hr 잠김 또는 비밀번호 틀림 → ① |
+| `ORA-12541` / `ORA-12514` | Oracle 꺼짐 → `services.msc`에서 `OracleServiceXE`, `OracleXETNSListener` 시작 |
+| `ORA-00922` / `ORA-01756` / 테이블·데이터가 일부만 들어감 | `NLS_LANG` 안 바꿈(한글 깨짐) → 터미널 확인 후 ②를 처음부터 |
+| `bash: :NLS_LANG=...: command not found` | Git Bash에 PowerShell 명령을 침 → Git Bash 쪽 명령 사용 |
+| `Failed to determine a suitable driver class` | `application-local.properties` 없음 → 2-2 |
+| `Port 8081 was already in use` | 서버가 이미 켜져 있음 → 기존 창의 서버를 끄기 |
+| `Cannot find a Java installation ... 21` | JDK 21 없음. 인터넷이 되면 Gradle이 자동으로 받음. 안 되면 JDK 21 설치 |
 
 ---
 
@@ -238,7 +309,6 @@ throw ApiException.conflict("이미 사용 중인 아이디입니다.");    // �
 
 | 할 일 | 담당 제안 | 메모 |
 | --- | --- | --- |
-| 더미 데이터 `sql/02_dummy_data.sql` | 테이블 주인이 각자 INSERT 작성 → C가 한 파일로 합침 | 넣을 내용은 ERD.md 7번에 정리돼 있음. **트리거를 만든 뒤** 후기를 넣어야 별점이 채워짐 |
 | 비밀번호 길이 규칙 | A | 지금은 4~20자(더미 `1234`에 맞춤). 바꾸면 DTO 세 곳(A-1·A-2·A-9) 수정 |
 | 테마 목록(B-1)·파티 목록(A-12) 쿼리 | B, A | 조건이 많아서 `@Query`(JPQL)나 Specification으로 직접 작성 |
 | 프런트 `api.js`에 파일 업로드 함수 | A | `multipart/form-data`용. `Content-Type`은 직접 넣지 않기 |

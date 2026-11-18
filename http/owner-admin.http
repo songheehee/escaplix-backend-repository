@@ -98,7 +98,7 @@ Content-Disposition: form-data; name="bizPlaceNo"
 999-99-99001
 --BOUNDARY--
 
-### C-3 사장 등록 (파일 포함) → 201 { storeId, status: "PENDING" }   ※ 다시 할 땐 bizPlaceNo 바꾸기
+### C-3 사장 등록 (사업장등록증 + 매장 사진) → 201 { storeId, status: "PENDING" }   ※ 다시 할 땐 bizPlaceNo 바꾸기
 # @name newStore
 POST {{host}}/api/owner/stores
 Authorization: Bearer {{owner.response.body.token}}
@@ -146,6 +146,11 @@ Content-Disposition: form-data; name="bizPlaceNo"
 999-99-99001
 --BOUNDARY
 Content-Disposition: form-data; name="bizPlaceFile"; filename="sample.png"
+Content-Type: image/png
+
+< ./sample.png
+--BOUNDARY
+Content-Disposition: form-data; name="storePhoto"; filename="sample.png"
 Content-Type: image/png
 
 < ./sample.png
@@ -670,7 +675,7 @@ Authorization: Bearer {{admin.response.body.token}}
 GET {{host}}/api/admin/stores?status=REJECTED
 Authorization: Bearer {{admin.response.body.token}}
 
-### C-14 매장 상세 → 사장 정보(bizNo 포함), hasBizPlaceFile
+### C-14 매장 상세 → 사장 정보(bizNo 포함), hasBizPlaceFile, photoUrl
 GET {{host}}/api/admin/stores/{{newStore.response.body.storeId}}
 Authorization: Bearer {{admin.response.body.token}}
 

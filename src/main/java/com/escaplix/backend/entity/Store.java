@@ -50,6 +50,10 @@ public class Store {
     @Column(nullable = false, length = 600)
     private String intro;
 
+    /** 매장 사진 공개 주소 "/uploads/stores/uuid.jpg" (FileStorage.saveStorePhoto). 없으면 null */
+    @Column(name = "photo_url", length = 500)
+    private String photoUrl;
+
     @Column(precision = 9, scale = 6)
     private BigDecimal lat;
 

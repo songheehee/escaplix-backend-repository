@@ -70,8 +70,9 @@ class AuthFlowTests {
 
     @Test
     void 공개_API는_틀린_토큰이어도_비회원으로_통과() throws Exception {
+        // B-7 장르 목록은 구현됨 → 틀린 토큰이어도 401 이 아니라 200
         mvc.perform(get("/api/genres").header("Authorization", "Bearer 만료된토큰"))
-                .andExpect(status().isNotImplemented());
+                .andExpect(status().isOk());
     }
 
     @Test

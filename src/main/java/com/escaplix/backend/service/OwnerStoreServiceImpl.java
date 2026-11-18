@@ -50,7 +50,7 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
 
     @Override
     @Transactional
-    public StoreSaveResponse createStore(LoginMember login, StoreForm form, MultipartFile bizPlaceFile) {
+    public StoreSaveResponse createStore(LoginMember login, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto) {
         validateLatLng(form);
         if (storeRepository.existsByBizPlaceNo(form.bizPlaceNo())) {
             throw ApiException.conflict("이미 등록된 사업장 등록번호입니다.");
@@ -72,13 +72,18 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
             store.setStatus(StoreStatus.PENDING);
         }
 
-        // 검사가 다 끝난 뒤에 파일을 저장한다. DB 저장이 실패하면 파일을 지운다
-        String savedPath = hasFile(bizPlaceFile) ? fileStorage.savePrivate(bizPlaceFile, BIZ_PLACE_FOLDER) : null;
-        store.setBizPlaceFilePath(savedPath);
+        // 검사가 다 끝난 뒤에 파일을 저장한다. 사진 저장이나 DB 저장이 실패하면 이미 저장한 파일을 지운다
+        String savedPath = null;
+        String photoUrl = null;
         try {
+            savedPath = hasFile(bizPlaceFile) ? fileStorage.savePrivate(bizPlaceFile, BIZ_PLACE_FOLDER) : null;
+            photoUrl = hasFile(storePhoto) ? fileStorage.saveStorePhoto(storePhoto) : null;   // 매장 사진은 선택
+            store.setBizPlaceFilePath(savedPath);
+            store.setPhotoUrl(photoUrl);
             storeRepository.saveAndFlush(store);
         } catch (RuntimeException e) {
             fileStorage.deleteQuietly(savedPath);
+            fileStorage.deleteQuietly(photoUrl);
             throw e;
         }
         return new StoreSaveResponse(store.getStoreId(), store.getStatus());
@@ -86,7 +91,7 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
 
     @Override
     @Transactional
-    public StoreSaveResponse updateStore(LoginMember login, Long storeId, StoreForm form, MultipartFile bizPlaceFile) {
+    public StoreSaveResponse updateStore(LoginMember login, Long storeId, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto) {
         Store store = findStore(storeId);
         support.checkStoreAccess(login, store);
         validateLatLng(form);
@@ -101,16 +106,22 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
             store.setRejectReason(null);
         }
 
-        // 파일을 비우면 기존 파일 그대로. 새 파일이면 바꾼다 (옛 파일은 기록용으로 남겨 둠)
+        // 파일을 비우면 기존 파일 그대로. 새 파일이면 바꾼다 (등록증·사진 둘 다. 옛 파일은 남겨 둠)
         String newPath = null;
-        if (hasFile(bizPlaceFile)) {
-            newPath = fileStorage.savePrivate(bizPlaceFile, BIZ_PLACE_FOLDER);
-            store.setBizPlaceFilePath(newPath);
-        }
+        String newPhotoUrl = null;
         try {
+            if (hasFile(bizPlaceFile)) {
+                newPath = fileStorage.savePrivate(bizPlaceFile, BIZ_PLACE_FOLDER);
+                store.setBizPlaceFilePath(newPath);
+            }
+            if (hasFile(storePhoto)) {
+                newPhotoUrl = fileStorage.saveStorePhoto(storePhoto);
+                store.setPhotoUrl(newPhotoUrl);
+            }
             storeRepository.flush();
         } catch (RuntimeException e) {
             fileStorage.deleteQuietly(newPath);
+            fileStorage.deleteQuietly(newPhotoUrl);
             throw e;
         }
         return new StoreSaveResponse(store.getStoreId(), store.getStatus());
@@ -152,6 +163,7 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
                 s.getWebsiteUrl(),
                 s.getHours(),
                 s.getIntro(),
+                s.getPhotoUrl(),
                 s.getLat(),
                 s.getLng(),
                 s.getBizPlaceNo(),

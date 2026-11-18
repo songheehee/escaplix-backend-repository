@@ -76,6 +76,7 @@ public class AdminServiceImpl implements AdminService {
                 s.getWebsiteUrl(),
                 s.getHours(),
                 s.getIntro(),
+                s.getPhotoUrl(),
                 s.getBizPlaceNo(),
                 s.getBizPlaceFilePath() != null,
                 ownerBrief(s.getOwner(), true),

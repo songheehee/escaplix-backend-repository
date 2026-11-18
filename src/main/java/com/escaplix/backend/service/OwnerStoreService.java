@@ -24,10 +24,10 @@ public interface OwnerStoreService {
     AvailableResponse checkBizPlaceNo(String bizPlaceNo);
 
     /** C-3 매장 등록 */
-    StoreSaveResponse createStore(LoginMember login, StoreForm form, MultipartFile bizPlaceFile);
+    StoreSaveResponse createStore(LoginMember login, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto);
 
     /** C-4 매장 수정 */
-    StoreSaveResponse updateStore(LoginMember login, Long storeId, StoreForm form, MultipartFile bizPlaceFile);
+    StoreSaveResponse updateStore(LoginMember login, Long storeId, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto);
 
     /** C-5 매장의 테마 목록 */
     List<OwnerThemeItem> getStoreThemes(LoginMember login, Long storeId);

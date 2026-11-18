@@ -14,6 +14,7 @@ public record MyReviewItem(
         boolean escaped,
         int hintCount,
         int playerCount,
+        int remainMinutes,
         int remainSeconds,
         LocalDate playedDate,
         String content,

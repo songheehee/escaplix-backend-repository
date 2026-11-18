@@ -28,10 +28,11 @@ public class MemberController {
         return memberService.signupUser(req);
     }
 
-    /** A-2 사장 회원가입 · 공개 · 201 */
+    /** A-2 사장 회원가입 · 공개 · 201. 파일이 없을 때 "파일을 첨부해 주세요." 를 주려고 required=false (검사는 FileStorage) */
     @PostMapping(value = "/api/members/owner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public MemberIdResponse signupOwner(@Valid @ModelAttribute SignupOwnerRequest req, @RequestPart(value = "bizFile") MultipartFile bizFile) {
+    public MemberIdResponse signupOwner(@Valid @ModelAttribute SignupOwnerRequest req,
+                                        @RequestPart(value = "bizFile", required = false) MultipartFile bizFile) {
         return memberService.signupOwner(req, bizFile);
     }
 

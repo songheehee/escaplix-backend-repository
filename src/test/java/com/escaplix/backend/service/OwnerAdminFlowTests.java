@@ -63,9 +63,10 @@ class OwnerAdminFlowTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("사업장등록증 이미지를 첨부해 주세요."));
 
-        // C-3 등록 → PENDING
+        // C-3 등록 (매장 사진 포함) → PENDING
         MvcResult created = mvc.perform(storeForm(multipart("/api/owner/stores"), bizPlaceNo)
                         .file(new MockMultipartFile("bizPlaceFile", "place.png", "image/png", PNG))
+                        .file(new MockMultipartFile("storePhoto", "photo.png", "image/png", PNG))
                         .header("Authorization", owner1))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("PENDING"))
@@ -87,7 +88,8 @@ class OwnerAdminFlowTests {
         mvc.perform(json(put("/api/admin/stores/" + storeId + "/approval"), "{\"approved\":false,\"reason\":\"상호가 다릅니다.\"}").header("Authorization", admin))
                 .andExpect(jsonPath("$.status").value("REJECTED"));
         mvc.perform(get("/api/owner/stores").header("Authorization", owner1))
-                .andExpect(jsonPath("$[0].rejectReason").value("상호가 다릅니다."));
+                .andExpect(jsonPath("$[0].rejectReason").value("상호가 다릅니다."))
+                .andExpect(jsonPath("$[0].photoUrl").value(org.hamcrest.Matchers.startsWith("/uploads/stores/")));
         mvc.perform(json(put("/api/admin/stores/" + storeId + "/approval"), "{\"approved\":true}").header("Authorization", admin))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("이미 처리된 매장입니다."));
@@ -104,6 +106,7 @@ class OwnerAdminFlowTests {
                 .andExpect(jsonPath("$[*].storeId", hasItem((int) storeId)));
         mvc.perform(get("/api/admin/stores/" + storeId).header("Authorization", admin))
                 .andExpect(jsonPath("$.hasBizPlaceFile").value(true))
+                .andExpect(jsonPath("$.photoUrl").exists())   // C-4 에서 사진을 비웠으니 기존 사진 유지
                 .andExpect(jsonPath("$.owner.bizNo").exists());
         mvc.perform(get("/api/admin/stores/" + storeId + "/biz-place-file").header("Authorization", admin))
                 .andExpect(status().isOk())

@@ -16,6 +16,7 @@ import java.util.UUID;
 /**
  * 이미지 저장 (ERD 6번 규칙). DB 에는 반환된 "경로 문자열"만 저장한다.
  * - 테마 사진: savePoster → "/uploads/posters/uuid.jpg" (공개 주소)
+ * - 매장 사진: saveStorePhoto → "/uploads/stores/uuid.jpg" (공개 주소)
  * - 사업자등록증·사업장등록증: savePrivate("biz" | "biz-place") → "biz/uuid.png" (비공개, loadPrivate 로만 꺼냄)
  * jpg·png·webp, 5MB 이하만. 확장자가 아니라 파일 앞부분(시그니처)으로 형식을 확인한다.
  */
@@ -38,6 +39,12 @@ public class FileStorage {
         return "/uploads/posters/" + name;
     }
 
+    /** 매장 사진 (C-3, C-4) → "/uploads/stores/uuid.jpg" (공개 주소) */
+    public String saveStorePhoto(MultipartFile file) {
+        String name = store(file, publicRoot.resolve("stores"));
+        return "/uploads/stores/" + name;
+    }
+
     public String savePrivate(MultipartFile file, String folder) {
         String name = store(file, privateRoot.resolve(folder));
         return folder + "/" + name;
@@ -55,10 +62,13 @@ public class FileStorage {
     public void deleteQuietly(String storedPath) {
         if (storedPath == null) return;
         try {
-            Path p = storedPath.startsWith("/uploads/posters/")
-                    ? publicRoot.resolve("posters").resolve(storedPath.substring("/uploads/posters/".length()))
+            // 공개 사진 "/uploads/posters/x", "/uploads/stores/x" → uploads/ 아래, 나머지는 비공개 폴더
+            Path p = storedPath.startsWith("/uploads/")
+                    ? publicRoot.resolve(storedPath.substring("/uploads/".length()))
                     : privateRoot.resolve(storedPath);
-            Files.deleteIfExists(p.normalize());
+            p = p.normalize();
+            if (!p.startsWith(publicRoot) && !p.startsWith(privateRoot)) return;   // ../ 로 밖을 가리키면 무시
+            Files.deleteIfExists(p);
         } catch (IOException ignored) {
         }
     }

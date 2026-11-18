@@ -9,6 +9,8 @@ public record StoreListItem(
         String area,
         String address,
         String hours,
+        /** 매장 사진 "/uploads/stores/...". 없으면 null */
+        String photoUrl,
         List<String> genres,
         int themeCount,
         Double avgRating,

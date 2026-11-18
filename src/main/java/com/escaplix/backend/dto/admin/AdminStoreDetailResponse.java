@@ -13,6 +13,8 @@ public record AdminStoreDetailResponse(
         String websiteUrl,
         String hours,
         String intro,
+        /** 매장 사진 "/uploads/stores/...". 없으면 null */
+        String photoUrl,
         String bizPlaceNo,
         boolean hasBizPlaceFile,
         OwnerBrief owner,

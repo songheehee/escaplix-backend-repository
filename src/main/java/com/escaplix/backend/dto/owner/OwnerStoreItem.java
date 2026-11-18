@@ -14,6 +14,8 @@ public record OwnerStoreItem(
         String websiteUrl,
         String hours,
         String intro,
+        /** 매장 사진 "/uploads/stores/...". 없으면 null */
+        String photoUrl,
         BigDecimal lat,
         BigDecimal lng,
         String bizPlaceNo,

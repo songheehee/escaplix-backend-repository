@@ -14,7 +14,7 @@ public record ThemeReviewsResponse(
 
     /** nickname 은 MEMBER JOIN (닉네임 바꾸면 바로 반영) */
     public record Item(Long reviewId, String nickname, int rating, boolean escaped, int hintCount, int playerCount,
-                       int remainSeconds, LocalDate playedDate, String content, LocalDateTime createdAt,
+                       int remainMinutes, int remainSeconds, LocalDate playedDate, String content, LocalDateTime createdAt,
                        boolean mine, boolean reportedByMe) {
     }
 }

@@ -1,0 +1,10 @@
+# 이 파일을 복사해서 application-local.properties 로 이름을 바꾸고 값을 채운다 (그 파일은 .gitignore 됨)
+spring.datasource.url=jdbc:oracle:thin:@localhost:1521:xe
+spring.datasource.username=hr
+spring.datasource.password=여기에_비밀번호
+
+# 32글자 이상 아무 문자열. 팀원끼리 같을 필요 없음
+jwt.secret=change-me-to-a-random-string-at-least-32-chars
+
+# SQL 보고 싶으면
+# spring.jpa.show-sql=true

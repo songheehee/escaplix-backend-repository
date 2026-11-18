@@ -50,3 +50,7 @@ Thumbs.db
 .env
 application-local.properties
 application-local.yml
+
+### Escaplix 올린 파일 (테마 사진·사업자/사업장 등록증) ###
+uploads/
+private/

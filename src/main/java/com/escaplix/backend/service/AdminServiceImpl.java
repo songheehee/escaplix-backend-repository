@@ -4,7 +4,12 @@ import com.escaplix.backend.common.*;
 import com.escaplix.backend.common.file.FileDownload;
 import com.escaplix.backend.dto.admin.*;
 import com.escaplix.backend.entity.*;
+
+import java.time.LocalDateTime;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+
 import com.escaplix.backend.common.file.FileStorage;
 import com.escaplix.backend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * AdminService 구현 (C 담당). 지금은 전부 501 "아직 구현 전". TODO 를 채우고 throw 줄을 지운다.
+ * AdminService 구현 (C 담당).
  * 조회는 클래스의 readOnly 트랜잭션, 저장·수정·삭제 메서드에는 @Transactional 이 붙어 있다.
  */
 @Service
@@ -22,60 +27,161 @@ public class AdminServiceImpl implements AdminService {
 
     private final StoreRepository storeRepository;
     private final ThemeRepository themeRepository;
-    private final ThemeGenreRepository themeGenreRepository;
     private final ReportRepository reportRepository;
     private final MemberRepository memberRepository;
     private final FileStorage fileStorage;
+    private final OwnerServiceSupport support;
 
     @Override
     public AdminSummaryResponse getSummary() {
-        // TODO(C) 대기 매장·테마 수와 가장 오래된 신청일, 승인 매장·공개 테마 수, WAIT 신고 수, 역할별 회원 수
-        throw ApiException.notImplemented("C-12 관리자 홈 숫자 요약");
+        LocalDateTime oldestStoreAt = storeRepository.findFirstByStatusOrderByCreatedAtAsc(StoreStatus.PENDING)
+                .map(Store::getCreatedAt).orElse(null);
+        LocalDateTime oldestThemeAt = themeRepository.findFirstByStatusOrderByCreatedAtAsc(ThemeStatus.PENDING)
+                .map(Theme::getCreatedAt).orElse(null);
+
+        Map<Role, Long> memberCountByRole = new EnumMap<>(Role.class);
+        for (Role role : Role.values()) {
+            memberCountByRole.put(role, memberRepository.countByRole(role));
+        }
+
+        return new AdminSummaryResponse(
+                storeRepository.countByStatus(StoreStatus.PENDING),
+                themeRepository.countByStatus(ThemeStatus.PENDING),
+                oldestStoreAt,
+                oldestThemeAt,
+                storeRepository.countByStatus(StoreStatus.APPROVED),
+                themeRepository.countByStatus(ThemeStatus.OPEN),
+                reportRepository.countByStatus(ReportStatus.WAIT),
+                memberCountByRole);
     }
 
     @Override
     public List<AdminStoreItem> getStores(StoreStatus status) {
-        // TODO(C) 오래된 순. owner 는 MEMBER JOIN (관리자 등록 매장이면 null, bizNo 는 목록에선 null)
-        throw ApiException.notImplemented("C-13 매장 승인 목록");
+        // 오래된 순. 관리자 등록 매장이면 owner = null, 목록에서는 bizNo 를 넣지 않는다
+        return storeRepository.findByStatusOrderByCreatedAtAsc(status).stream()
+                .map(s -> new AdminStoreItem(s.getStoreId(), s.getName(), s.getBizPlaceNo(),
+                        ownerBrief(s.getOwner(), false), s.getCreatedAt()))
+                .toList();
     }
 
     @Override
     public AdminStoreDetailResponse getStore(Long storeId) {
-        // TODO(C) owner 에 bizNo 까지 넣기, hasBizPlaceFile
-        throw ApiException.notImplemented("C-14 매장 승인 상세");
+        Store s = findStore(storeId);
+        return new AdminStoreDetailResponse(
+                s.getStoreId(),
+                s.getName(),
+                s.getArea(),
+                s.getAddress(),
+                s.getPhone(),
+                s.getWebsiteUrl(),
+                s.getHours(),
+                s.getIntro(),
+                s.getPhotoUrl(),
+                s.getBizPlaceNo(),
+                s.getBizPlaceFilePath() != null,
+                ownerBrief(s.getOwner(), true),
+                s.getStatus(),
+                s.getRejectReason(),
+                s.getCreatedAt());
     }
 
     @Override
     public FileDownload getBizPlaceFile(Long storeId) {
-        // TODO(C) 파일 없으면 404 (관리자 직접 등록 매장)
-        throw ApiException.notImplemented("C-15 사업장등록증 이미지");
+        Store s = findStore(storeId);
+        String path = s.getBizPlaceFilePath();
+        if (path == null) {
+            // 관리자 직접 등록 매장은 파일이 없을 수 있다
+            throw ApiException.notFound("사업장등록증 파일이 없습니다.");
+        }
+        return new FileDownload(fileStorage.loadPrivate(path), FileStorage.contentType(path));
     }
 
     @Override
     @Transactional
     public StoreApprovalResponse approveStore(Long storeId, ApprovalRequest req) {
-        // TODO(C) PENDING 아니면 409 "이미 처리된 매장입니다."
-        // TODO(C) 반려인데 reason 비면 400 → REJECTED + rejectReason
-        // TODO(C) 승인 → APPROVED + rejectReason 비움
-        throw ApiException.notImplemented("C-16 매장 승인·반려");
+        Store s = findStore(storeId);
+        if (s.getStatus() != StoreStatus.PENDING) {
+            throw ApiException.conflict("이미 처리된 매장입니다.");
+        }
+        if (req.approved()) {
+            s.setStatus(StoreStatus.APPROVED);
+            s.setRejectReason(null);
+        } else {
+            s.setStatus(StoreStatus.REJECTED);
+            s.setRejectReason(requireReason(req));   // 사장 홈(C-1)에 보인다 (결정 S4)
+        }
+        return new StoreApprovalResponse(s.getStoreId(), s.getStatus(), s.getRejectReason());
     }
 
     @Override
     public List<AdminThemeItem> getThemes(ThemeStatus status) {
-        // TODO(C) 오래된 순
-        throw ApiException.notImplemented("C-17 테마 승인 목록");
+        // 오래된 순
+        return themeRepository.findByStatusOrderByCreatedAtAsc(status).stream()
+                .map(t -> new AdminThemeItem(
+                        t.getThemeId(),
+                        t.getTitle(),
+                        t.getStore().getName(),
+                        support.genreNames(t.getThemeId()),
+                        t.getPosterUrl(),
+                        t.getCreatedAt(),
+                        t.getUpdatedAt()))
+                .toList();
     }
 
     @Override
     public AdminThemeDetailResponse getTheme(Long themeId) {
-        throw ApiException.notImplemented("C-18 테마 승인 상세");
+        Theme t = findTheme(themeId);
+        Store s = t.getStore();
+        return new AdminThemeDetailResponse(
+                support.toThemeDetail(t),
+                new AdminThemeDetailResponse.StoreInfo(s.getStoreId(), s.getName(), s.getBizPlaceNo(),
+                        s.getPhone(), s.getWebsiteUrl(), s.getStatus()));
     }
 
     @Override
     @Transactional
     public ThemeApprovalResponse approveTheme(Long themeId, ApprovalRequest req) {
-        // TODO(C) PENDING 아니면 409, 매장이 APPROVED 아니면 409 "매장이 승인되지 않았습니다."
-        // TODO(C) 반려 reason 필수(400) → REJECTED / 승인 → OPEN + rejectReason 비움
-        throw ApiException.notImplemented("C-19 테마 승인·반려");
+        Theme t = findTheme(themeId);
+        if (t.getStatus() != ThemeStatus.PENDING) {
+            throw ApiException.conflict("이미 처리된 테마입니다.");
+        }
+        if (req.approved()) {
+            if (t.getStore().getStatus() != StoreStatus.APPROVED) {
+                throw ApiException.conflict("매장이 승인되지 않았습니다.");
+            }
+            t.setStatus(ThemeStatus.OPEN);
+            t.setRejectReason(null);
+        } else {
+            t.setStatus(ThemeStatus.REJECTED);
+            t.setRejectReason(requireReason(req));   // 사장 홈(C-5)에 보인다 (결정 S4)
+        }
+        return new ThemeApprovalResponse(t.getThemeId(), t.getStatus(), t.getRejectReason());
+    }
+
+    // ------------------------------------------------------------------
+
+    private Store findStore(Long storeId) {
+        return storeRepository.findById(storeId)
+                .orElseThrow(() -> ApiException.notFound("매장을 찾을 수 없습니다."));
+    }
+
+    private Theme findTheme(Long themeId) {
+        return themeRepository.findById(themeId)
+                .orElseThrow(() -> ApiException.notFound("테마를 찾을 수 없습니다."));
+    }
+
+    /** 반려 사유 1~300자 (300자 초과는 DTO 에서 400) */
+    private String requireReason(ApprovalRequest req) {
+        if (req.reason() == null || req.reason().isBlank()) {
+            throw ApiException.badRequest("반려 사유를 입력해 주세요.");
+        }
+        return req.reason().trim();
+    }
+
+    /** 신청한 사장 (MEMBER JOIN). 관리자 직접 등록이면 null. bizNo 는 상세(C-14)에서만 */
+    private OwnerBrief ownerBrief(Member owner, boolean withBizNo) {
+        if (owner == null) return null;
+        return new OwnerBrief(owner.getMemberId(), owner.getLoginId(), owner.getNickname(),
+                withBizNo ? owner.getBizNo() : null);
     }
 }

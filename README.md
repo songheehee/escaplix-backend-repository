@@ -143,6 +143,13 @@ PowerShell:
 - 프런트(Live Server `127.0.0.1:5500`)에서 부르면 CORS가 이미 열려 있습니다.
 - 아직 구현하지 않은 API는 **501** `{"message": "아직 구현 전입니다: A-1 손님 회원가입"}`로 답합니다.
 
+**손으로 API 눌러보기**
+
+- VS Code 확장 **REST Client**(Huachao Mao)를 깔고 `http/` 폴더의 `.http` 파일을 엽니다. 요청 위의 **Send Request**를 누르면 오른쪽에 응답이 뜹니다.
+- `http/member.http`: 로그인(더미 계정 + 비번 `1234`) → 받은 토큰이 아래 요청에 자동으로 들어갑니다. 토큰이 필요한 API 테스트는 이걸 복사해서 쓰세요.
+- 자기 API를 구현하면 `http/theme.http`, `http/owner.http`처럼 **담당별 파일**을 추가해 주세요.
+- Git Bash의 `curl`로 한글을 보내면 깨져서 400·500이 납니다(서버 문제 아님). 한글 요청은 REST Client로 하세요.
+
 **자주 나는 에러**
 
 | 에러 | 원인 → 해결 |

@@ -118,6 +118,51 @@ public class ThemeBrowseRepository {
         return map;
     }
 
+    // ---------------------------------------------------------------- 이번 주 인기 (B-1 sort=popular)
+
+    /** 테마별 since 이후 새로 생긴 찜 수 */
+    public Map<Long, Integer> countWishesSince(Collection<Long> themeIds, LocalDateTime since) {
+        return countByTheme(themeIds, ids -> em.createQuery(
+                        "select w.theme.themeId, count(w) from Wishlist w" +
+                        " where w.theme.themeId in :ids and w.createdAt >= :since group by w.theme.themeId", Object[].class)
+                .setParameter("ids", ids)
+                .setParameter("since", since)
+                .getResultList());
+    }
+
+    /** 테마별 since 이후 새로 만들어진 파티 수 (삭제된 파티는 빼고, 마감·정원 찬 파티는 셈) */
+    public Map<Long, Integer> countPartiesSince(Collection<Long> themeIds, LocalDateTime since) {
+        return countByTheme(themeIds, ids -> em.createQuery(
+                        "select p.theme.themeId, count(p) from Party p" +
+                        " where p.theme.themeId in :ids and p.createdAt >= :since and p.status <> :deleted" +
+                        " group by p.theme.themeId", Object[].class)
+                .setParameter("ids", ids)
+                .setParameter("since", since)
+                .setParameter("deleted", PartyStatus.DELETED)
+                .getResultList());
+    }
+
+    /** 테마별 since 이후 새로 쓴 후기 수 (숨긴 후기는 빼고) */
+    public Map<Long, Integer> countReviewsSince(Collection<Long> themeIds, LocalDateTime since) {
+        return countByTheme(themeIds, ids -> em.createQuery(
+                        "select r.theme.themeId, count(r) from Review r" +
+                        " where r.theme.themeId in :ids and r.createdAt >= :since and r.status = :visible" +
+                        " group by r.theme.themeId", Object[].class)
+                .setParameter("ids", ids)
+                .setParameter("since", since)
+                .setParameter("visible", ReviewStatus.VISIBLE)
+                .getResultList());
+    }
+
+    private Map<Long, Integer> countByTheme(Collection<Long> themeIds,
+                                            java.util.function.Function<List<Long>, List<Object[]>> query) {
+        Map<Long, Integer> map = new HashMap<>();
+        for (Object[] r : inChunks(themeIds, query)) {
+            map.put((Long) r[0], ((Number) r[1]).intValue());
+        }
+        return map;
+    }
+
     // ---------------------------------------------------------------- 찜
 
     /** 내가 찜한 테마 번호들 (wished 채우기) */

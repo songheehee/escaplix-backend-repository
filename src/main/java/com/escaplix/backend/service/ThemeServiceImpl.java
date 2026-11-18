@@ -40,6 +40,14 @@ public class ThemeServiceImpl implements ThemeService {
             .comparing(Theme::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
             .thenComparing(Theme::getThemeId, Comparator.reverseOrder());
 
+    /**
+     * 이번 주 인기 (sort=popular): 최근 7일 동안 새로 생긴 활동으로 점수를 매긴다
+     *   점수 = 새 파티 × 3 + 새 찜 × 2 + 새 후기 × 1   (같으면 평점순)
+     * 누적이 아니라 최근 7일만 세서, 주마다 순위가 바뀐다
+     */
+    static final int POPULAR_DAYS = 7;
+    static final int PARTY_POINT = 3, WISH_POINT = 2, REVIEW_POINT = 1;
+
     private final ThemeBrowseRepository browseRepository;
     private final TimeSlotRepository timeSlotRepository;
     private final WishlistRepository wishlistRepository;
@@ -51,8 +59,8 @@ public class ThemeServiceImpl implements ThemeService {
     public List<ThemeListItem> findThemes(LoginMember login, ThemeSearchCondition cond) {
         // 1) 조건 검사
         String sort = blankToNull(cond.sort()) == null ? "rate" : cond.sort().trim();
-        if (!sort.equals("rate") && !sort.equals("new")) {
-            throw ApiException.badRequest("정렬은 rate(평점순) 또는 new(최신순)만 고를 수 있습니다.");
+        if (!sort.equals("rate") && !sort.equals("new") && !sort.equals("popular")) {
+            throw ApiException.badRequest("정렬은 rate(평점순), new(최신순), popular(이번 주 인기순)만 고를 수 있습니다.");
         }
         if (cond.people() != null && cond.people() < 1) {
             throw ApiException.badRequest("인원은 1명 이상으로 골라 주세요.");
@@ -67,13 +75,23 @@ public class ThemeServiceImpl implements ThemeService {
         List<Theme> themes = new ArrayList<>(browseRepository.findPublicThemes(
                 blankToNull(cond.area()), cond.people(),
                 ThemeBrowseRepository.likePattern(cond.keyword()), cond.genreId(), dayType));
-        themes.sort(sort.equals("new") ? BY_NEW : BY_RATING);
 
-        // 3) 장르·파티 수·찜 여부는 테마마다 묻지 않고 한 번에
+        // 3) 장르·파티 수·찜 여부·이번 주 점수는 테마마다 묻지 않고 한 번에
+        LocalDateTime now = LocalDateTime.now();
         List<Long> ids = themes.stream().map(Theme::getThemeId).toList();
         Map<Long, List<Genre>> genres = browseRepository.findGenresByThemeIds(ids);
-        Map<Long, Integer> parties = browseRepository.countRecruitingParties(ids, LocalDateTime.now());
+        Map<Long, Integer> parties = browseRepository.countRecruitingParties(ids, now);
+        Map<Long, Integer> weekly = weeklyScores(ids, now);
         Set<Long> wished = login == null ? Set.of() : browseRepository.findWishedThemeIds(login.memberId());
+
+        // 4) 정렬
+        Comparator<Theme> order = switch (sort) {
+            case "new" -> BY_NEW;
+            case "popular" -> Comparator.<Theme>comparingInt(t -> weekly.getOrDefault(t.getThemeId(), 0))
+                    .reversed().thenComparing(BY_RATING);
+            default -> BY_RATING;
+        };
+        themes.sort(order);
 
         return themes.stream().map(t -> new ThemeListItem(
                 t.getThemeId(), t.getTitle(),
@@ -81,7 +99,7 @@ public class ThemeServiceImpl implements ThemeService {
                 genreNames(genres.get(t.getThemeId())),
                 t.getDifficulty(), t.getPlayMinutes(), t.getMinPeople(), t.getMaxPeople(), t.getPrice(),
                 t.getPosterUrl(), t.getAvgRating(), nz(t.getReviewCount()),
-                parties.getOrDefault(t.getThemeId(), 0), t.getCreatedAt(),
+                parties.getOrDefault(t.getThemeId(), 0), weekly.getOrDefault(t.getThemeId(), 0), t.getCreatedAt(),
                 wished.contains(t.getThemeId())
         )).toList();
     }
@@ -177,6 +195,21 @@ public class ThemeServiceImpl implements ThemeService {
     }
 
     // ---------------------------------------------------------------- 도우미
+
+    /** 테마별 이번 주 인기 점수 (최근 POPULAR_DAYS 일) */
+    private Map<Long, Integer> weeklyScores(List<Long> ids, LocalDateTime now) {
+        LocalDateTime since = now.minusDays(POPULAR_DAYS);
+        Map<Long, Integer> newParties = browseRepository.countPartiesSince(ids, since);
+        Map<Long, Integer> newWishes = browseRepository.countWishesSince(ids, since);
+        Map<Long, Integer> newReviews = browseRepository.countReviewsSince(ids, since);
+        Map<Long, Integer> score = new HashMap<>();
+        for (Long id : ids) {
+            score.put(id, newParties.getOrDefault(id, 0) * PARTY_POINT
+                    + newWishes.getOrDefault(id, 0) * WISH_POINT
+                    + newReviews.getOrDefault(id, 0) * REVIEW_POINT);
+        }
+        return score;
+    }
 
     /** 공개된 테마만. 승인 전·반려·운영 종료이거나 매장이 승인 전이면 404 (명세 B-2) */
     private Theme findPublicTheme(Long themeId) {

@@ -25,12 +25,12 @@
 
 다른 사람 파일을 고쳐야 하면 먼저 주인에게 말하고, PR 설명에 적어 주세요.
 
-| 담당 | control | service | dto | entity · repository |
+| 담당 | controller | service | dto | entity · repository |
 | --- | --- | --- | --- | --- |
-| A | `MemberController`, `AdminMemberController`, `PartyController` | `MemberService(Imp)`, `PartyService(Imp)` | `dto/member`, `dto/party` | Member, Party, PartyMember, PartyMessage |
-| B | `ThemeController`, `StoreController` | `ThemeService(Imp)`, `StoreService(Imp)` | `dto/theme`, `dto/store` | Wishlist |
-| C | `OwnerStoreController`, `OwnerThemeController`, `AdminController` | `OwnerStoreService(Imp)`, `OwnerThemeService(Imp)`, `AdminService(Imp)` | `dto/owner`, `dto/admin` | Store, Theme, ThemeGenre, TimeSlot, Genre, Holiday |
-| D | `ReviewController`, `MyRecordController` | `ReviewService(Imp)`, `RecommendService(Imp)` | `dto/review` | Review, Report, MemberGenre |
+| A | `MemberController`, `AdminMemberController`, `PartyController` | `MemberService(Impl)`, `PartyService(Impl)` | `dto/member`, `dto/party` | Member, Party, PartyMember, PartyMessage |
+| B | `ThemeController`, `StoreController` | `ThemeService(Impl)`, `StoreService(Impl)` | `dto/theme`, `dto/store` | Wishlist |
+| C | `OwnerStoreController`, `OwnerThemeController`, `AdminController` | `OwnerStoreService(Impl)`, `OwnerThemeService(Impl)`, `AdminService(Impl)` | `dto/owner`, `dto/admin` | Store, Theme, ThemeGenre, TimeSlot, Genre, Holiday |
+| D | `ReviewController`, `MyRecordController` | `ReviewService(Impl)`, `RecommendService(Impl)` | `dto/review` | Review, Report, MemberGenre |
 
 **공용 파일은 A가 관리합니다.** 아래 파일은 고칠 일이 있으면 A에게 요청하거나, PR에 A를 리뷰어로 넣어 주세요.
 
@@ -90,8 +90,8 @@ cp src/main/resources/application-local.properties.example src/main/resources/ap
 
 ```
 src/main/java/com/escaplix/backend
-├── control/        컨트롤러 10개: 주소·권한만. 받고 서비스로 넘긴다
-├── service/        XxxService(인터페이스) + XxxServiceImp(구현): 검사·권한 확인·트랜잭션
+├── controller/        컨트롤러 10개: 주소·권한만. 받고 서비스로 넘긴다
+├── service/        XxxService(인터페이스) + XxxServiceImpl(구현): 검사·권한 확인·트랜잭션
 ├── repository/     JpaRepository 14개
 ├── entity/         테이블 14개 + 상태값 enum 10개
 ├── dto/            요청·응답 record (member, party, theme, store, owner, admin, review)
@@ -106,10 +106,10 @@ src/main/java/com/escaplix/backend
 
 ### 3-1. 구현하는 순서 (예: A-7 내 정보)
 
-스켈레톤에는 주소, DTO, 권한이 다 들어 있습니다. **`XxxServiceImp`의 TODO만 채우면 됩니다.**
+스켈레톤에는 주소, DTO, 권한이 다 들어 있습니다. **`XxxServiceImpl`의 TODO만 채우면 됩니다.**
 
 ```java
-// service/MemberServiceImp.java (지금)
+// service/MemberServiceImpl.java (지금)
 @Override
 public MyInfoResponse getMyInfo(LoginMember login) {
     // TODO(A) login.memberId() 로 조회. bizNo 는 사장만
@@ -199,8 +199,8 @@ throw ApiException.conflict("이미 사용 중인 아이디입니다.");    // �
 
 | 대상 | 규칙 | 예 |
 | --- | --- | --- |
-| 패키지 | 소문자 (수업과 같은 이름) | `control`, `service`, `repository`, `entity`, `dto` |
-| 컨트롤러 / 서비스 | `XxxController` / `XxxService` + `XxxServiceImp` | `PartyController`, `PartyServiceImpl` |
+| 패키지 | 소문자 (수업과 같은 이름) | `controller`, `service`, `repository`, `entity`, `dto` |
+| 컨트롤러 / 서비스 | `XxxController` / `XxxService` + `XxxServiceImpl` | `PartyController`, `PartyServiceImpl` |
 | DTO | 요청 `XxxRequest`(폼은 `XxxForm`), 응답 `XxxResponse` · 목록 한 줄 `XxxItem`. 모두 `record` | `PartyCreateRequest`, `PartyListItem` |
 | 메서드·변수 | camelCase, 동사로 시작 | `findParties`, `join` |
 | 상수 | UPPER_SNAKE | `MAX_BYTES` |

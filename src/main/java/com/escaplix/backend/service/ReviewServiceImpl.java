@@ -6,6 +6,9 @@ import com.escaplix.backend.dto.review.*;
 
 import java.util.List;
 
+import com.escaplix.backend.entity.Review;
+import com.escaplix.backend.entity.ReviewStatus;
+import com.escaplix.backend.entity.Theme;
 import com.escaplix.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -50,11 +53,46 @@ public class ReviewServiceImpl implements ReviewService {
         throw ApiException.notImplemented("D-3 후기 삭제");
     }
 
+    /** D-4 테마 후기 + 평균 (공개). VISIBLE 만 최신순, 평균은 THEME 의 트리거 값 */
     @Override
     public ThemeReviewsResponse getThemeReviews(LoginMember login, Long themeId) {
-        // TODO(D) VISIBLE 만 최신순. avgRating·reviewCount 는 THEME 의 트리거 값
-        // TODO(D) mine·reportedByMe 는 login 있을 때만
-        throw ApiException.notImplemented("D-4 테마 후기 + 평균");
+        // 1. 주소의 번호로 테마 한 개 가져오기 (별점 집계·제한 시간이 THEME 에 있음). 없는 번호면 404
+        Theme theme = themeRepository.findById(themeId)
+                .orElseThrow(() -> ApiException.notFound("없는 테마입니다."));
+
+        // 2. 평균 별점: 트리거가 채운 review_count, rating_sum 으로 계산 (후기 0개면 null)
+        int count = theme.getReviewCount();
+        Double avg = (count == 0) ? null
+                : Math.round(theme.getRatingSum() * 10.0 / count) / 10.0;
+
+        // 3. 요청한 사람의 회원번호. 토큰 없이 온 비회원이면 null
+        Long myId = (login == null) ? null : login.memberId();
+
+        // 4. 이 테마의 VISIBLE 후기만 최신순 (작성 시각이 같으면 번호 큰 것 먼저)
+        List<Review> reviews = reviewRepository
+                .findByTheme_ThemeIdAndStatusOrderByCreatedAtDescReviewIdDesc(themeId, ReviewStatus.VISIBLE);
+
+        // 5. 엔티티 하나하나를 응답용 Item(DTO)으로 바꾸기
+        List<ThemeReviewsResponse.Item> items = reviews.stream()
+                .map(r -> new ThemeReviewsResponse.Item(
+                        r.getReviewId(),
+                        r.getMember().getNickname(),          // 닉네임은 MEMBER에서
+                        r.getRating(),
+                        r.getEscaped(),
+                        r.getHintCount(),
+                        r.getPlayerCount(),
+                        r.getRemainMinutes(),                 // 남은 시간 분
+                        r.getRemainSeconds(),                 // 남은 시간 초 (0~59)
+                        r.getPlayedDate(),
+                        r.getContent(),
+                        r.getCreatedAt(),
+                        myId != null && r.getMember().getMemberId().equals(myId),              // mine
+                        myId != null && reportRepository
+                                .existsByReview_ReviewIdAndReporter_MemberId(r.getReviewId(), myId)  // reportedByMe
+                ))
+                .toList();
+
+        return new ThemeReviewsResponse(avg, count, theme.getPlayMinutes(), items);
     }
 
     @Override

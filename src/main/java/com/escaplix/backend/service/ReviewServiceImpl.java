@@ -3,7 +3,17 @@ package com.escaplix.backend.service;
 import com.escaplix.backend.common.*;
 import com.escaplix.backend.common.auth.*;
 import com.escaplix.backend.dto.review.*;
+import com.escaplix.backend.entity.Party;
+import com.escaplix.backend.entity.PartyMember;
+import com.escaplix.backend.entity.PartyMemberStatus;
+import com.escaplix.backend.entity.PartyStatus;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.List;
 
 import com.escaplix.backend.entity.*;
@@ -198,11 +208,53 @@ public class ReviewServiceImpl implements ReviewService {
                 .toList();
     }
 
+    /** D-6 후기 쓸 수 있는 테마: 내가 JOINED 인 파티 중 play_at 지남 + 내 후기 없음. 삭제된 파티 제외 */
     @Override
     public List<ReviewCandidateItem> getReviewCandidates(LoginMember login) {
-        // TODO(D) 내가 JOINED 였던 파티 중 play_at 지난 것의 테마, 내 후기 없는 것만
-        // TODO(D) 같은 테마는 가장 최근 파티 하나
-        throw ApiException.notImplemented("D-6 후기 쓸 수 있는 테마");
+        Long myId = login.memberId();
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. 이미 후기를 쓴 테마 번호들
+        Set<Long> reviewedThemeIds = reviewRepository
+                .findByMember_MemberIdOrderByPlayedDateDescReviewIdDesc(myId).stream()
+                .map(r -> r.getTheme().getThemeId())
+                .collect(Collectors.toSet());
+
+        // 2. 내가 참여 중(JOINED)인 파티들을 걸러서, 최근 파티 순으로
+        List<Party> parties = partyMemberRepository
+                .findByMember_MemberIdAndStatus(myId, PartyMemberStatus.JOINED).stream()
+                .map(PartyMember::getParty)
+                .filter(p -> p.getStatus() != PartyStatus.DELETED)                   // 삭제된 파티 제외
+                .filter(p -> p.getPlayAt().isBefore(now))                            // 이미 지난 파티만
+                .filter(p -> !reviewedThemeIds.contains(p.getTheme().getThemeId()))  // 후기 안 쓴 테마만
+                .filter(p -> p.getTheme().getStatus() == ThemeStatus.OPEN
+                        || p.getTheme().getStatus() == ThemeStatus.CLOSED)        // 후기 쓸 수 있는 테마만 (D-1 과 같은 조건)
+                .sorted(Comparator.comparing(Party::getPlayAt).reversed())
+                .toList();
+
+        // 3. 같은 테마는 가장 최근 파티 하나만 (최근 순이라 처음 나온 게 가장 최근)
+        Map<Long, Party> latestByTheme = new LinkedHashMap<>();
+        for (Party p : parties) {
+            latestByTheme.putIfAbsent(p.getTheme().getThemeId(), p);
+        }
+
+        // 4. 응답 만들기. memberCount = 그 파티의 JOINED 인원 (팝업의 "플레이 인원" 처음 값)
+        return latestByTheme.values().stream()
+                .map(p -> {
+                    Theme t = p.getTheme();
+                    long memberCount = partyMemberRepository
+                            .countByParty_PartyIdAndStatus(p.getPartyId(), PartyMemberStatus.JOINED);
+                    return new ReviewCandidateItem(
+                            t.getThemeId(),
+                            t.getTitle(),
+                            t.getStore().getName(),
+                            t.getPlayMinutes(),
+                            p.getPartyId(),
+                            p.getPlayAt(),
+                            (int) memberCount
+                    );
+                })
+                .toList();
     }
 
     /** Review 엔티티 → MyReviewItem (D-5 목록 한 줄, D-2 수정 응답에서 같이 씀) */

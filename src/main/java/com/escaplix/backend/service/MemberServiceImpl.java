@@ -15,13 +15,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * MemberService 구현 (A 담당). 지금은 전부 501 "아직 구현 전". TODO 를 채우고 throw 줄을 지운다.
+ * MemberService 구현 (A 담당).
  * 조회는 클래스의 readOnly 트랜잭션, 저장·수정·삭제 메서드에는 @Transactional 이 붙어 있다.
  */
 @Service
@@ -32,7 +35,6 @@ public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
     private final MemberGenreRepository memberGenreRepository;
     private final GenreRepository genreRepository;
-    private final StoreRepository storeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final FileStorage fileStorage;
@@ -209,16 +211,44 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public AdminMemberListResponse findMembers(String keyword, Role role) {
-        // TODO(A) keyword: 아이디·닉네임 일부, role: USER/OWNER
-        // TODO(A) countByRole 은 조건과 상관없이 전체 (memberRepository.countByRole)
-        // TODO(A) 사장이면 managedStoreCount = storeRepository.countByOwner_MemberId
-        throw ApiException.notImplemented("A-10 회원 목록 (관리자)");
+        List<Member> members = memberRepository.search(likePattern(keyword), role);
+
+        // 사장의 매장 수는 사장마다 묻지 않고 한 번에 (상태와 상관없이)
+        Map<Long, Long> storeCounts = new HashMap<>();
+        for (Object[] r : memberRepository.countStoresByOwner()) {
+            storeCounts.put((Long) r[0], ((Number) r[1]).longValue());
+        }
+        List<AdminMemberItem> items = members.stream().map(m -> {
+            boolean owner = m.getRole() == Role.OWNER;
+            return new AdminMemberItem(m.getMemberId(), m.getLoginId(), m.getNickname(), m.getRole(),
+                    owner ? m.getBizNo() : null,
+                    owner ? storeCounts.getOrDefault(m.getMemberId(), 0L) : null,
+                    m.getCreatedAt());
+        }).toList();
+
+        // 역할 탭 숫자: 검색 조건과 상관없이 전체. 회원이 없는 역할도 0 으로
+        Map<Role, Long> countByRole = new LinkedHashMap<>();
+        for (Role r : List.of(Role.USER, Role.OWNER, Role.ADMIN)) countByRole.put(r, 0L);
+        for (Object[] r : memberRepository.countGroupByRole()) {
+            countByRole.put((Role) r[0], ((Number) r[1]).longValue());
+        }
+        return new AdminMemberListResponse(items.size(), countByRole, items);
     }
 
     @Override
     public FileDownload getBizFile(Long memberId) {
-        // TODO(A) 사장이 아니거나 파일 없으면 404
-        // TODO(A) new FileDownload(fileStorage.loadPrivate(경로), FileStorage.contentType(경로))
-        throw ApiException.notImplemented("A-11 사업자등록증 이미지 (관리자)");
+        String path = memberRepository.findById(memberId)
+                .filter(m -> m.getRole() == Role.OWNER)
+                .map(Member::getBizFilePath)
+                .orElseThrow(() -> ApiException.notFound("사업자등록증 파일이 없습니다."));
+        // 비공개 폴더 밖을 가리키거나 파일이 실제로 없으면 loadPrivate 가 404
+        return new FileDownload(fileStorage.loadPrivate(path), FileStorage.contentType(path));
+    }
+
+    /** 검색어 → "%검색어%" (앞뒤 공백 지움, % _ \ 는 글자 그대로 찾게 이스케이프). 비면 null */
+    private static String likePattern(String keyword) {
+        if (keyword == null || keyword.isBlank()) return null;
+        String k = keyword.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return "%" + k + "%";
     }
 }

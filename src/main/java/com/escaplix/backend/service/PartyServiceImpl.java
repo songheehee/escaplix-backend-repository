@@ -11,8 +11,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.escaplix.backend.common.time.DayTypeResolver;
 import com.escaplix.backend.repository.*;
@@ -261,9 +263,31 @@ public class PartyServiceImpl implements PartyService {
 
     @Override
     public List<MyPartyItem> getMyParties(LoginMember login) {
-        // TODO(A) 내가 JOINED 인 파티 (DELETED 제외)
-        // TODO(A) 마지막 메시지 시각 최신순, ended = play_at 지남
-        throw ApiException.notImplemented("A-22 내 채팅(내 파티) 목록");
+        Long me = login.memberId();
+        List<Party> parties = partyBrowseRepository.findMyParties(me);   // JOINED 만 → 강퇴·삭제된 파티는 빠짐
+        if (parties.isEmpty()) return List.of();
+
+        Map<Long, Integer> counts = partyBrowseRepository.joinedCountsOfMyParties(me);
+        Map<Long, PartyMessage> lasts = partyBrowseRepository.lastMessagesOfMyParties(me);
+        LocalDateTime now = LocalDateTime.now();
+
+        // 마지막 메시지 시각 최신순. 시각이 같으면 번호가 큰 것 먼저, 메시지가 없는 파티는 맨 뒤
+        Comparator<Party> byLastMessage = Comparator.comparing(
+                (Party p) -> Optional.ofNullable(lasts.get(p.getPartyId())).map(PartyMessage::getCreatedAt).orElse(null),
+                Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(p -> Optional.ofNullable(lasts.get(p.getPartyId())).map(PartyMessage::getMessageId).orElse(0L),
+                        Comparator.reverseOrder());
+
+        return parties.stream().sorted(byLastMessage).map(p -> {
+            PartyMessage last = lasts.get(p.getPartyId());
+            MyPartyItem.LastMessage lastMessage = last == null ? null
+                    : new MyPartyItem.LastMessage(last.getMember().getNickname(), last.getMsgType(), last.getContent(), last.getCreatedAt());
+            return new MyPartyItem(p.getPartyId(), p.getTitle(), p.getTheme().getThemeId(), p.getTheme().getTitle(),
+                    p.getStatus(), p.getLeader().getMemberId().equals(me) ? PartyRole.LEADER : PartyRole.MEMBER,
+                    counts.getOrDefault(p.getPartyId(), 0), p.getMaxPeople(), p.getPlayAt(),
+                    p.getPlayAt().isBefore(now),   // ended: 끝난 파티 → 후기 쓰기 버튼
+                    lastMessage);
+        }).toList();
     }
 
     // ================================================================ 도우미

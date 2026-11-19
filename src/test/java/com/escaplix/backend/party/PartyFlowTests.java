@@ -531,6 +531,69 @@ class PartyFlowTests {
         mvc.perform(get("/api/parties/" + partyId + "/messages")).andExpect(status().isUnauthorized());
     }
 
+    // ================================================================ A-22 내 채팅 목록
+
+    @Test
+    void A22_내가_참여_중인_파티만_마지막_메시지_최신순() throws Exception {
+        Member meM = saveUser("me");
+        String me = bearer(meM);
+        Member otherM = saveUser("other");
+        String other = bearer(otherM);
+
+        long mine = create(me, 4);                  // 내가 방장
+        long joined = create(other, 4);             // 참여자
+        long closed = create(other, 4);             // 참여 후 마감 → 그래도 보임
+        long kicked = create(other, 4);             // 강퇴 → 안 보임
+        long deleted = create(other, 4);            // 삭제 → 안 보임
+        long left = create(other, 4);               // 스스로 나감 → 안 보임
+        for (long id : new long[]{joined, closed, kicked, deleted, left}) join(me, id).andExpect(status().isCreated());
+        mvc.perform(put("/api/parties/" + closed + "/close").header("Authorization", other)).andExpect(status().isOk());
+        mvc.perform(delete("/api/parties/" + kicked + "/members/" + meM.getMemberId()).header("Authorization", other)).andExpect(status().isNoContent());
+        mvc.perform(delete("/api/parties/" + deleted).header("Authorization", other)).andExpect(status().isNoContent());
+        mvc.perform(delete("/api/parties/" + left + "/join").header("Authorization", me)).andExpect(status().isNoContent());
+
+        // 메시지 순서: mine → closed → joined (joined 가 가장 최근)
+        say(me, mine, "제 파티예요").andExpect(status().isCreated());
+        say(other, closed, "마감했어요").andExpect(status().isCreated());
+        say(other, joined, "곧 봬요").andExpect(status().isCreated());
+
+        // mine 은 이미 끝난 파티로 만든다 (ended=true → 후기 쓰기 버튼)
+        Party past = partyRepository.findById(mine).orElseThrow();
+        past.setPlayAt(LocalDateTime.now().minusHours(2));
+        past.setDeadlineAt(LocalDateTime.now().minusHours(3));
+        partyRepository.save(past);
+
+        mvc.perform(get("/api/my/parties").header("Authorization", me))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].partyId", contains((int) joined, (int) closed, (int) mine)))
+                .andExpect(jsonPath("$[0].myRole").value("MEMBER"))
+                .andExpect(jsonPath("$[0].status").value("RECRUITING"))
+                .andExpect(jsonPath("$[0].currentPeople").value(2))
+                .andExpect(jsonPath("$[0].maxPeople").value(4))
+                .andExpect(jsonPath("$[0].themeId").value(theme.getThemeId()))
+                .andExpect(jsonPath("$[0].themeTitle").value("파티테마" + tag))
+                .andExpect(jsonPath("$[0].ended").value(false))
+                .andExpect(jsonPath("$[0].lastMessage.nickname").value(otherM.getNickname()))
+                .andExpect(jsonPath("$[0].lastMessage.msgType").value("CHAT"))
+                .andExpect(jsonPath("$[0].lastMessage.content").value("곧 봬요"))
+                .andExpect(jsonPath("$[1].status").value("CLOSED"))
+                .andExpect(jsonPath("$[2].myRole").value("LEADER"))
+                .andExpect(jsonPath("$[2].ended").value(true));
+
+        // 강퇴 안내 줄이 마지막이어도 방장 쪽 목록엔 KICK 으로 보임
+        mvc.perform(get("/api/my/parties").header("Authorization", other))
+                .andExpect(jsonPath("$[?(@.partyId == " + kicked + ")].lastMessage.msgType", contains("KICK")))
+                .andExpect(jsonPath("$[?(@.partyId == " + deleted + ")]").isEmpty());
+    }
+
+    @Test
+    void A22_참여한_파티가_없으면_빈_배열_로그인_안_하면_401() throws Exception {
+        mvc.perform(get("/api/my/parties").header("Authorization", bearer(saveUser("alone"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+        mvc.perform(get("/api/my/parties")).andExpect(status().isUnauthorized());
+    }
+
     // ================================================================ 도우미
 
     private ResultActions messages(String token, long partyId, Long after) throws Exception {

@@ -83,6 +83,52 @@ public class PartyBrowseRepository {
         return out;
     }
 
+    // ---------------------------------------------------------------- A-22 내 채팅 목록
+
+    /** 내가 JOINED 인 파티 (A-22) 조건. 삭제된 파티와 강퇴된 파티는 빠진다. :me 를 바인딩 */
+    private static final String MY_PARTY_IDS =
+            "select x.party.partyId from PartyMember x where x.member.memberId = :me and x.status = :joined" +
+            " and x.party.status <> :deleted";
+
+    /** 내가 JOINED 인 파티 (삭제된 것 제외). 테마까지 한 번에 */
+    public List<Party> findMyParties(Long memberId) {
+        return em.createQuery("select p from Party p join fetch p.theme where p.partyId in (" + MY_PARTY_IDS + ")", Party.class)
+                .setParameter("me", memberId)
+                .setParameter("joined", PartyMemberStatus.JOINED)
+                .setParameter("deleted", PartyStatus.DELETED)
+                .getResultList();
+    }
+
+    /** 내 파티들의 현재 인원 (JOINED 수). partyId → 인원 */
+    public Map<Long, Integer> joinedCountsOfMyParties(Long memberId) {
+        List<Object[]> rows = em.createQuery(
+                        "select pm.party.partyId, count(pm) from PartyMember pm" +
+                        " where pm.status = :joined and pm.party.partyId in (" + MY_PARTY_IDS + ")" +
+                        " group by pm.party.partyId", Object[].class)
+                .setParameter("me", memberId)
+                .setParameter("joined", PartyMemberStatus.JOINED)
+                .setParameter("deleted", PartyStatus.DELETED)
+                .getResultList();
+        Map<Long, Integer> out = new HashMap<>();
+        for (Object[] r : rows) out.put((Long) r[0], ((Number) r[1]).intValue());
+        return out;
+    }
+
+    /** 내 파티들의 마지막 메시지 (번호가 가장 큰 것). 보낸 사람까지 한 번에. partyId → 메시지 */
+    public Map<Long, PartyMessage> lastMessagesOfMyParties(Long memberId) {
+        List<PartyMessage> rows = em.createQuery(
+                        "select m from PartyMessage m join fetch m.member where m.messageId in (" +
+                        " select max(m2.messageId) from PartyMessage m2 where m2.party.partyId in (" + MY_PARTY_IDS + ")" +
+                        " group by m2.party.partyId)", PartyMessage.class)
+                .setParameter("me", memberId)
+                .setParameter("joined", PartyMemberStatus.JOINED)
+                .setParameter("deleted", PartyStatus.DELETED)
+                .getResultList();
+        Map<Long, PartyMessage> out = new HashMap<>();
+        for (PartyMessage m : rows) out.put(m.getParty().getPartyId(), m);
+        return out;
+    }
+
     /** 내 참여 상태 (JOINED / KICKED). partyId → 상태. 나간 파티는 줄이 없어서 안 나옴 */
     public Map<Long, PartyMemberStatus> myStatuses(Long memberId) {
         List<Object[]> rows = em.createQuery(

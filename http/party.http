@@ -134,6 +134,11 @@ GET {{host}}/api/parties/{{create.response.body.partyId}}/messages?after={{chat.
 Authorization: Bearer {{leader.response.body.token}}
 
 
+### A-22 내 채팅 목록 (내가 참여 중인 파티, 마지막 메시지 최신순. 강퇴·삭제된 파티는 빠짐)
+GET {{host}}/api/my/parties
+Authorization: Bearer {{guest.response.body.token}}
+
+
 ### ---------- A-18 강퇴 · A-19 마감 · A-15 삭제 (방장만) ----------
 
 ### A-18 user4 강퇴 → 204 (이후 user4 는 방 403, 재참여 409)

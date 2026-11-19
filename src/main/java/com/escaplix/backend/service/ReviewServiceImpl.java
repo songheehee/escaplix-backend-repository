@@ -6,10 +6,7 @@ import com.escaplix.backend.dto.review.*;
 
 import java.util.List;
 
-import com.escaplix.backend.entity.Review;
-import com.escaplix.backend.entity.ReviewStatus;
-import com.escaplix.backend.entity.Theme;
-import com.escaplix.backend.entity.ThemeStatus;
+import com.escaplix.backend.entity.*;
 import com.escaplix.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -154,12 +151,38 @@ public class ReviewServiceImpl implements ReviewService {
         return new ThemeReviewsResponse(avg, count, theme.getPlayMinutes(), items);
     }
 
+    /** D-11 후기 신고 (USER·OWNER). 접수만 함 (status 는 DB 기본값 WAIT) */
     @Override
     @Transactional
     public ReportIdResponse report(LoginMember login, Long reviewId, ReportRequest req) {
-        // TODO(D) 없거나 HIDDEN 이면 404, 내 후기면 400, 이미 신고했으면 409
-        // TODO(D) REPORT(WAIT) 저장 (처리는 나중 기능)
-        throw ApiException.notImplemented("D-11 후기 신고");
+        Long myId = login.memberId();
+
+        // 1. 신고할 후기 찾기. 없거나 숨긴 후기면 404 (숨긴 후기는 이미 안 보이니 없는 것처럼)
+        Review review = reviewRepository.findById(reviewId)
+                .filter(r -> r.getStatus() == ReviewStatus.VISIBLE)
+                .orElseThrow(() -> ApiException.notFound("없는 후기입니다."));
+
+        // 2. 내 후기는 신고 못 함
+        if (review.getMember().getMemberId().equals(myId)) {
+            throw ApiException.badRequest("내 후기는 신고할 수 없습니다.");
+        }
+
+        // 3. 한 후기에 한 사람은 한 번만
+        if (reportRepository.existsByReview_ReviewIdAndReporter_MemberId(reviewId, myId)) {
+            throw ApiException.conflict("이미 신고한 후기입니다.");
+        }
+
+        // 4. 신고 저장. 버튼을 두 번 눌러 동시에 들어와도 UNIQUE(review_id, reporter_id) 가 막아 줌 → 409
+        Report report = new Report();
+        report.setReview(review);
+        report.setReporter(memberRepository.getReferenceById(myId));
+        report.setReason(req.reason().strip());
+        try {
+            reportRepository.saveAndFlush(report);
+        } catch (DataIntegrityViolationException e) {
+            throw ApiException.conflict("이미 신고한 후기입니다.");
+        }
+        return new ReportIdResponse(report.getReportId());
     }
 
     /** D-5 내 기록. 플레이한 날 최신순, 숨김 후기도 status 와 함께 */

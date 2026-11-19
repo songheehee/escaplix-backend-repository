@@ -60,10 +60,9 @@ public class ReviewServiceImpl implements ReviewService {
         Theme theme = themeRepository.findById(themeId)
                 .orElseThrow(() -> ApiException.notFound("없는 테마입니다."));
 
-        // 2. 평균 별점: 트리거가 채운 review_count, rating_sum 으로 계산 (후기 0개면 null)
+        // 2. 평균 별점: Theme 의 공용 계산 메서드 사용 (후기 0개면 null)
         int count = theme.getReviewCount();
-        Double avg = (count == 0) ? null
-                : Math.round(theme.getRatingSum() * 10.0 / count) / 10.0;
+        Double avg = theme.getAvgRating();
 
         // 3. 요청한 사람의 회원번호. 토큰 없이 온 비회원이면 null
         Long myId = (login == null) ? null : login.memberId();
@@ -103,10 +102,17 @@ public class ReviewServiceImpl implements ReviewService {
         throw ApiException.notImplemented("D-11 후기 신고");
     }
 
+    /** D-5 내 기록. 플레이한 날 최신순, 숨김 후기도 status 와 함께 */
     @Override
     public List<MyReviewItem> getMyReviews(LoginMember login) {
-        // TODO(D) 플레이한 날 최신순, HIDDEN 도 status 와 함께
-        throw ApiException.notImplemented("D-5 내 기록");
+        // 1. 토큰의 회원번호로 내 후기 전부 (숨김 포함)
+        List<Review> reviews = reviewRepository
+                .findByMember_MemberIdOrderByPlayedDateDescReviewIdDesc(login.memberId());
+
+        // 2. 한 줄씩 MyReviewItem(DTO)으로
+        return reviews.stream()
+                .map(this::toMyReviewItem)
+                .toList();
     }
 
     @Override
@@ -114,5 +120,26 @@ public class ReviewServiceImpl implements ReviewService {
         // TODO(D) 내가 JOINED 였던 파티 중 play_at 지난 것의 테마, 내 후기 없는 것만
         // TODO(D) 같은 테마는 가장 최근 파티 하나
         throw ApiException.notImplemented("D-6 후기 쓸 수 있는 테마");
+    }
+
+    /** Review 엔티티 → MyReviewItem (D-5 목록 한 줄, D-2 수정 응답에서 같이 씀) */
+    private MyReviewItem toMyReviewItem(Review r) {
+        Theme theme = r.getTheme();
+        return new MyReviewItem(
+                r.getReviewId(),
+                theme.getThemeId(),
+                theme.getTitle(),
+                theme.getStore().getName(),   // 매장 이름: 후기 → 테마 → 매장
+                theme.getPlayMinutes(),       // 화면 "12:34 남기고 (70:00 중)" 표시용
+                r.getRating(),
+                r.getEscaped(),
+                r.getHintCount(),
+                r.getPlayerCount(),
+                r.getRemainMinutes(),
+                r.getRemainSeconds(),
+                r.getPlayedDate(),
+                r.getContent(),
+                r.getStatus()
+        );
     }
 }

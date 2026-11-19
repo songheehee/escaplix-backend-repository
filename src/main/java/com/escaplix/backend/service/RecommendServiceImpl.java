@@ -63,7 +63,7 @@ public class RecommendServiceImpl implements RecommendService {
         // 3. 내 기존 선호 장르 전부 지우기
         memberGenreRepository.deleteByMember_MemberId(myId);
         memberGenreRepository.flush();   // DELETE 를 INSERT 보다 먼저 DB에 보냄 (UNIQUE(member_id, genre_id) 충돌 방지)
-        
+
         // 4. 새로 고른 장르 넣기 (빈 배열이면 아무것도 안 넣음 = 전부 해제)
         Member me = memberRepository.getReferenceById(myId);
         for (Genre genre : genres) {

@@ -1,0 +1,169 @@
+### =====================================================================
+### A · 파티 API 손으로 테스트하기 (A-12 ~ A-19, VS Code 확장 "REST Client" 필요)
+###  1) 서버 켜기: ./gradlew bootRun (Git Bash) / .\gradlew bootRun (PowerShell)
+###  2) 맨 위 로그인 3개를 먼저 "Send Request" → 아래 요청에 토큰이 자동으로 들어감
+###  3) 위에서부터 순서대로 보내면 됨. 새 파티 번호는 "create" 응답에서 이어서 씀
+###  ※ playAt·deadlineAt 은 "오늘 이후" 날짜로 바꿔서 보내기. 테마 1번 시간표: 주중 15·17·19·21시, 주말 11~21시 2시간 간격
+###  ※ 만든 파티는 DB 에 남음 → 지우려면 맨 아래 SQL 참고
+### =====================================================================
+
+@host = http://localhost:8081
+@playAt = 2026-12-30T19:00:00
+@deadlineAt = 2026-12-29T18:00:00
+
+### 로그인: 방장 역할 user3
+# @name leader
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "loginId": "user3", "password": "1234" }
+
+### 로그인: 참여자 역할 user4
+# @name guest
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "loginId": "user4", "password": "1234" }
+
+### 로그인: 참여자 역할 user5
+# @name guest2
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "loginId": "user5", "password": "1234" }
+
+
+### ---------- A-14 파티 만들기 ----------
+
+### A-14 만들기 → 201 + partyId (정원 3명: 방장 + 2자리)
+# @name create
+POST {{host}}/api/parties
+Authorization: Bearer {{leader.response.body.token}}
+Content-Type: application/json
+
+{ "themeId": 1, "title": "인형의 집 같이 가실 분", "intro": "추리 위주로 차분하게 푸는 팀 원해요.",
+  "playAt": "{{playAt}}", "deadlineAt": "{{deadlineAt}}", "maxPeople": 3 }
+
+### A-14 시간표에 없는 시각(20:00) → 400 "그 시간에는 이 테마 시간표가 없습니다."
+POST {{host}}/api/parties
+Authorization: Bearer {{leader.response.body.token}}
+Content-Type: application/json
+
+{ "themeId": 1, "title": "시간 틀림", "intro": "확인용", "playAt": "2026-12-30T20:00:00", "deadlineAt": "{{deadlineAt}}", "maxPeople": 3 }
+
+### A-14 테마 인원(2~4) 밖 → 400
+POST {{host}}/api/parties
+Authorization: Bearer {{leader.response.body.token}}
+Content-Type: application/json
+
+{ "themeId": 1, "title": "인원 틀림", "intro": "확인용", "playAt": "{{playAt}}", "deadlineAt": "{{deadlineAt}}", "maxPeople": 9 }
+
+### A-14 공개 안 된 테마(9번 승인 대기) → 404
+POST {{host}}/api/parties
+Authorization: Bearer {{leader.response.body.token}}
+Content-Type: application/json
+
+{ "themeId": 9, "title": "대기 테마", "intro": "확인용", "playAt": "{{playAt}}", "deadlineAt": "{{deadlineAt}}", "maxPeople": 3 }
+
+
+### ---------- A-12 목록 · A-13 방 정보 ----------
+
+### A-12 목록 (모집 중 + 기한 남은 것만, 가까운 일정순). joined/kicked 는 내 기준
+GET {{host}}/api/parties
+Authorization: Bearer {{guest.response.body.token}}
+
+### A-12 검색어 (띄어쓰기 무시) · 장르(하나라도 맞으면) · 테마
+GET {{host}}/api/parties?keyword=인형%20의집&genreIds=1,2&themeId=1
+Authorization: Bearer {{guest.response.body.token}}
+
+### A-13 방 정보 (방장 → myRole LEADER)
+GET {{host}}/api/parties/{{create.response.body.partyId}}
+Authorization: Bearer {{leader.response.body.token}}
+
+### A-13 참여 안 한 사람 → 403
+GET {{host}}/api/parties/{{create.response.body.partyId}}
+Authorization: Bearer {{guest.response.body.token}}
+
+
+### ---------- A-16 참여 · A-17 나가기 ----------
+
+### A-16 user4 참여 → 201 (2/3)
+POST {{host}}/api/parties/{{create.response.body.partyId}}/join
+Authorization: Bearer {{guest.response.body.token}}
+
+### A-16 또 참여 → 409 "이미 참여한 파티입니다."
+POST {{host}}/api/parties/{{create.response.body.partyId}}/join
+Authorization: Bearer {{guest.response.body.token}}
+
+### A-16 user5 참여 → 201, 정원 차서 status FULL
+POST {{host}}/api/parties/{{create.response.body.partyId}}/join
+Authorization: Bearer {{guest2.response.body.token}}
+
+### A-17 방장은 못 나감 → 400
+DELETE {{host}}/api/parties/{{create.response.body.partyId}}/join
+Authorization: Bearer {{leader.response.body.token}}
+
+### A-17 user5 나가기 → 204 (FULL → RECRUITING, 다시 참여 가능)
+DELETE {{host}}/api/parties/{{create.response.body.partyId}}/join
+Authorization: Bearer {{guest2.response.body.token}}
+
+
+### ---------- A-21 채팅 보내기 · A-20 새 채팅 받기 ----------
+
+### A-21 user4 채팅 → 201 (앞뒤 공백은 지워서 저장, mine=true)
+POST {{host}}/api/parties/{{create.response.body.partyId}}/messages
+Authorization: Bearer {{guest.response.body.token}}
+Content-Type: application/json
+
+{ "content": "  무서운 건 제가 앞장설게요  " }
+
+### A-21 공백만 → 400
+POST {{host}}/api/parties/{{create.response.body.partyId}}/messages
+Authorization: Bearer {{guest.response.body.token}}
+Content-Type: application/json
+
+{ "content": "   " }
+
+### A-20 처음 들어왔을 때 (최근 50개, 오래된 것부터. 안내 줄 JOIN/LEAVE 도 섞여 있음)
+# @name chat
+GET {{host}}/api/parties/{{create.response.body.partyId}}/messages
+Authorization: Bearer {{leader.response.body.token}}
+
+### A-20 3초마다: after=마지막으로 받은 번호 → 새 것만 (없으면 []). 번호가 안 들어가면 위 응답 마지막 messageId 를 직접 적기
+GET {{host}}/api/parties/{{create.response.body.partyId}}/messages?after={{chat.response.body.$[-1:].messageId}}
+Authorization: Bearer {{leader.response.body.token}}
+
+
+### A-22 내 채팅 목록 (내가 참여 중인 파티, 마지막 메시지 최신순. 강퇴·삭제된 파티는 빠짐)
+GET {{host}}/api/my/parties
+Authorization: Bearer {{guest.response.body.token}}
+
+
+### ---------- A-18 강퇴 · A-19 마감 · A-15 삭제 (방장만) ----------
+
+### A-18 user4 강퇴 → 204 (이후 user4 는 방 403, 재참여 409)
+DELETE {{host}}/api/parties/{{create.response.body.partyId}}/members/{{guest.response.body.memberId}}
+Authorization: Bearer {{leader.response.body.token}}
+
+### A-18 강퇴된 user4 재참여 → 409 "강퇴된 파티에는 다시 참여할 수 없습니다."
+POST {{host}}/api/parties/{{create.response.body.partyId}}/join
+Authorization: Bearer {{guest.response.body.token}}
+
+### A-19 마감 → 200 CLOSED (목록에서 빠짐, 방은 그대로)
+PUT {{host}}/api/parties/{{create.response.body.partyId}}/close
+Authorization: Bearer {{leader.response.body.token}}
+
+### A-19 또 마감 → 409
+PUT {{host}}/api/parties/{{create.response.body.partyId}}/close
+Authorization: Bearer {{leader.response.body.token}}
+
+### A-15 삭제 → 204 (status DELETED, 이후 이 파티는 모든 API 에서 404)
+DELETE {{host}}/api/parties/{{create.response.body.partyId}}
+Authorization: Bearer {{leader.response.body.token}}
+
+
+### ---------- 테스트로 만든 파티 지우기 (SQL Developer 에서 실행. 더미 파티는 1~5번) ----------
+# DELETE FROM party_message WHERE party_id > 5;
+# DELETE FROM party_member WHERE party_id > 5;
+# DELETE FROM party WHERE party_id > 5;
+# COMMIT;

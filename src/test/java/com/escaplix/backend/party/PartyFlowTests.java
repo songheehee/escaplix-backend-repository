@@ -387,7 +387,163 @@ class PartyFlowTests {
                 .andExpect(jsonPath("$[?(@.partyId == " + partyId + ")]").isEmpty());
     }
 
+    // ================================================================ A-21 채팅 보내기
+
+    @Test
+    void A21_참여자는_채팅을_보내고_공백은_지워서_저장() throws Exception {
+        Member leaderM = saveUser("leader");
+        String leader = bearer(leaderM);
+        long partyId = create(leader, 4);
+
+        say(leader, partyId, "  무서운 건 제가 앞장설게요  ")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.messageId").value(notNullValue()))
+                .andExpect(jsonPath("$.memberId").value(leaderM.getMemberId()))
+                .andExpect(jsonPath("$.nickname").value(leaderM.getNickname()))
+                .andExpect(jsonPath("$.msgType").value("CHAT"))
+                .andExpect(jsonPath("$.content").value("무서운 건 제가 앞장설게요"))
+                .andExpect(jsonPath("$.mine").value(true));
+        // createdAt 은 DB DEFAULT SYSDATE. 테스트용 H2 에는 DEFAULT 가 없어서 여기선 확인 안 함 (Oracle 에서 확인)
+
+        PartyMessage last = partyMessageRepository.findTopByParty_PartyIdOrderByMessageIdDesc(partyId).orElseThrow();
+        assertThat(last.getMsgType()).isEqualTo(MessageType.CHAT);
+        assertThat(last.getContent()).isEqualTo("무서운 건 제가 앞장설게요");
+
+        // 공백만, 500자 넘음 → 400. 공백을 지우고 500자면 통과
+        say(leader, partyId, "   ").andExpect(status().isBadRequest());
+        say(leader, partyId, "가".repeat(501)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("메시지는 500자 이내로 입력해 주세요."));
+        say(leader, partyId, "가".repeat(500)).andExpect(status().isCreated());
+
+        // 마감된 파티도 채팅 가능 (일정 조율)
+        mvc.perform(put("/api/parties/" + partyId + "/close").header("Authorization", leader)).andExpect(status().isOk());
+        say(leader, partyId, "마감했어요. 당일에 봬요").andExpect(status().isCreated());
+    }
+
+    @Test
+    void A21_참여_안_했거나_강퇴되면_403_삭제된_파티는_404() throws Exception {
+        String leader = bearer(saveUser("leader"));
+        long partyId = create(leader, 4);
+        Member aM = saveUser("a");
+        String a = bearer(aM);
+
+        say(a, partyId, "들어가도 돼요?").andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("파티에 참여한 사람만 채팅할 수 있습니다."));
+
+        join(a, partyId).andExpect(status().isCreated());
+        say(a, partyId, "안녕하세요").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.mine").value(true));
+
+        mvc.perform(delete("/api/parties/" + partyId + "/members/" + aM.getMemberId()).header("Authorization", leader))
+                .andExpect(status().isNoContent());
+        say(a, partyId, "왜 강퇴해요").andExpect(status().isForbidden());   // 강퇴 직후 바로 막힘
+
+        mvc.perform(delete("/api/parties/" + partyId).header("Authorization", leader)).andExpect(status().isNoContent());
+        say(leader, partyId, "삭제된 방").andExpect(status().isNotFound());
+        say(leader, 999999L, "없는 방").andExpect(status().isNotFound());
+        mvc.perform(post("/api/parties/" + partyId + "/messages").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"content\":\"로그인 안 함\"}")).andExpect(status().isUnauthorized());
+    }
+
+    // ================================================================ A-20 새 채팅 받기
+
+    @Test
+    void A20_처음엔_전부_오름차순_after_뒤로는_새_것만() throws Exception {
+        Member leaderM = saveUser("leader");
+        String leader = bearer(leaderM);
+        long partyId = create(leader, 4);
+        Member aM = saveUser("a");
+        String a = bearer(aM);
+        join(a, partyId).andExpect(status().isCreated());
+        say(leader, partyId, "안녕하세요").andExpect(status().isCreated());
+        say(a, partyId, "반가워요").andExpect(status().isCreated());
+
+        // after 없음: 안내 줄(JOIN 2) + 채팅 2, 오래된 것부터
+        String body = messages(a, partyId, null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$[*].msgType", contains("JOIN", "JOIN", "CHAT", "CHAT")))
+                .andExpect(jsonPath("$[0].nickname").value(leaderM.getNickname()))
+                .andExpect(jsonPath("$[0].content").value(nullValue()))
+                .andExpect(jsonPath("$[0].mine").value(false))
+                .andExpect(jsonPath("$[1].mine").value(true))
+                .andExpect(jsonPath("$[2].content").value("안녕하세요"))
+                .andExpect(jsonPath("$[3].mine").value(true))
+                .andReturn().getResponse().getContentAsString();
+        List<Number> ids = JsonPath.read(body, "$[*].messageId");
+        assertThat(ids).extracting(Number::longValue).isSorted();
+        long lastId = ids.get(ids.size() - 1).longValue();
+
+        // 3초마다: 새 것 없으면 빈 배열, 생기면 그것만
+        messages(a, partyId, lastId).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
+        say(leader, partyId, "내일 봬요").andExpect(status().isCreated());
+        messages(a, partyId, lastId)
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].content").value("내일 봬요"));
+
+        // 닉네임을 바꾸면 예전 메시지도 새 닉네임 (MEMBER JOIN)
+        leaderM.setNickname("새닉" + tag);
+        memberRepository.save(leaderM);
+        messages(a, partyId, null).andExpect(jsonPath("$[0].nickname").value("새닉" + tag));
+
+        // 마감된 파티도 읽기 가능
+        mvc.perform(put("/api/parties/" + partyId + "/close").header("Authorization", leader)).andExpect(status().isOk());
+        messages(a, partyId, null).andExpect(status().isOk());
+    }
+
+    @Test
+    void A20_처음엔_최근_50개_after_뒤로는_최대_100개() throws Exception {
+        String leader = bearer(saveUser("leader"));
+        long partyId = create(leader, 4);                         // 안내 줄 1개
+        for (int i = 1; i <= 120; i++) say(leader, partyId, "메시지" + i).andExpect(status().isCreated());
+
+        // 처음: 가장 최근 50개 (71 ~ 120), 오래된 것부터
+        messages(leader, partyId, null)
+                .andExpect(jsonPath("$", hasSize(50)))
+                .andExpect(jsonPath("$[0].content").value("메시지71"))
+                .andExpect(jsonPath("$[49].content").value("메시지120"));
+        // after=0: 처음부터 최대 100개 (안내 줄 + 메시지1 ~ 99)
+        messages(leader, partyId, 0L)
+                .andExpect(jsonPath("$", hasSize(100)))
+                .andExpect(jsonPath("$[0].msgType").value("JOIN"))
+                .andExpect(jsonPath("$[99].content").value("메시지99"));
+    }
+
+    @Test
+    void A20_참여_안_했거나_강퇴되면_403_삭제된_파티는_404() throws Exception {
+        String leader = bearer(saveUser("leader"));
+        long partyId = create(leader, 4);
+        Member aM = saveUser("a");
+        String a = bearer(aM);
+
+        messages(a, partyId, null).andExpect(status().isForbidden());
+        join(a, partyId).andExpect(status().isCreated());
+        messages(a, partyId, null).andExpect(status().isOk());
+
+        mvc.perform(delete("/api/parties/" + partyId + "/members/" + aM.getMemberId()).header("Authorization", leader))
+                .andExpect(status().isNoContent());
+        messages(a, partyId, null).andExpect(status().isForbidden());   // 강퇴 직후
+        // 방장 눈에는 강퇴 안내 줄이 마지막
+        messages(leader, partyId, null).andExpect(jsonPath("$[-1:].msgType", contains("KICK")));
+
+        mvc.perform(delete("/api/parties/" + partyId).header("Authorization", leader)).andExpect(status().isNoContent());
+        messages(leader, partyId, null).andExpect(status().isNotFound());
+        mvc.perform(get("/api/parties/" + partyId + "/messages")).andExpect(status().isUnauthorized());
+    }
+
     // ================================================================ 도우미
+
+    private ResultActions messages(String token, long partyId, Long after) throws Exception {
+        var req = get("/api/parties/" + partyId + "/messages").header("Authorization", token);
+        if (after != null) req.param("after", String.valueOf(after));
+        return mvc.perform(req);
+    }
+
+    private ResultActions say(String token, long partyId, String content) throws Exception {
+        String json = "{\"content\":" + (content == null ? "null" : "\"" + content + "\"") + "}";
+        return mvc.perform(post("/api/parties/" + partyId + "/messages").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON).content(json));
+    }
 
     private long create(String token, int maxPeople) throws Exception {
         String body = createReq(token, theme.getThemeId(), playAt, deadline, maxPeople)

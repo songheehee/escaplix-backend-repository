@@ -5,8 +5,12 @@ import com.escaplix.backend.common.auth.*;
 import com.escaplix.backend.dto.party.*;
 import com.escaplix.backend.entity.*;
 
+import jakarta.persistence.EntityManager;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +41,7 @@ public class PartyServiceImpl implements PartyService {
     private final TimeSlotRepository timeSlotRepository;
     private final MemberRepository memberRepository;
     private final DayTypeResolver dayTypeResolver;
+    private final EntityManager em;
 
     // ================================================================ A-12 ~ A-19
 
@@ -217,19 +222,41 @@ public class PartyServiceImpl implements PartyService {
 
     @Override
     public List<MessageResponse> getMessages(LoginMember login, Long partyId, Long after) {
-        // TODO(A) 내가 JOINED 아니면 403 (강퇴 직후 포함), DELETED 면 404
-        // TODO(A) after 없으면 최근 50개(뒤집어서 오름차순), 있으면 그다음 최대 100개
-        // TODO(A) nickname 은 member 에서 (JOIN), mine = 내 memberId
-        throw ApiException.notImplemented("A-20 새 채팅 받기");
+        chatRoom(login, partyId);   // 강퇴 직후에도 403 → 프런트는 3초 반복을 멈추고 목록으로
+
+        List<PartyMessage> messages;
+        if (after == null) {
+            // 처음 들어왔을 때: 최근 50개를 최신순으로 받아서 뒤집는다 → 오래된 것부터
+            messages = new ArrayList<>(partyMessageRepository.findTop50ByParty_PartyIdOrderByMessageIdDesc(partyId));
+            Collections.reverse(messages);
+        } else {
+            // 3초마다: 마지막으로 받은 번호 다음 것만 (최대 100개)
+            messages = partyMessageRepository.findTop100ByParty_PartyIdAndMessageIdGreaterThanOrderByMessageIdAsc(partyId, after);
+        }
+        return messages.stream().map(m -> toMessage(m, login.memberId())).toList();
     }
 
     @Override
     @Transactional
     public MessageResponse sendMessage(LoginMember login, Long partyId, MessageSendRequest req) {
-        // TODO(A) 내가 JOINED 아니면 403. CLOSED 파티도 채팅 가능
-        // TODO(A) content.strip() 이 비면 400
-        // TODO(A) PARTY_MESSAGE(CHAT) 저장
-        throw ApiException.notImplemented("A-21 채팅 보내기");
+        Party party = chatRoom(login, partyId);   // CLOSED 파티도 채팅 가능 (일정 조율용)
+
+        String content = req.content() == null ? "" : req.content().strip();
+        if (content.isEmpty()) {
+            throw ApiException.badRequest("메시지를 입력해 주세요.");
+        }
+        if (content.length() > 500) {
+            throw ApiException.badRequest("메시지는 500자 이내로 입력해 주세요.");
+        }
+
+        PartyMessage m = new PartyMessage();
+        m.setParty(party);
+        m.setMember(me(login));
+        m.setMsgType(MessageType.CHAT);
+        m.setContent(content);
+        partyMessageRepository.saveAndFlush(m);
+        em.refresh(m);   // created_at 은 DB DEFAULT SYSDATE 로 채워지므로 다시 읽어 와서 응답에 넣는다
+        return toMessage(m, login.memberId());
     }
 
     @Override
@@ -246,6 +273,24 @@ public class PartyServiceImpl implements PartyService {
         return partyRepository.findByIdForUpdate(partyId)
                 .filter(p -> p.getStatus() != PartyStatus.DELETED)
                 .orElseThrow(() -> ApiException.notFound(NO_PARTY));
+    }
+
+    /** 채팅(A-20·A-21) 입장 확인: 없거나 DELETED 면 404, 내가 JOINED 아니면 403 (강퇴 직후 포함) */
+    private Party chatRoom(LoginMember login, Long partyId) {
+        Party party = partyRepository.findById(partyId)
+                .filter(p -> p.getStatus() != PartyStatus.DELETED)
+                .orElseThrow(() -> ApiException.notFound(NO_PARTY));
+        if (!isJoined(partyId, login.memberId())) {
+            throw ApiException.forbidden("파티에 참여한 사람만 채팅할 수 있습니다.");
+        }
+        return party;
+    }
+
+    /** 채팅 한 줄 (A-20 목록, A-21 응답). 닉네임은 지금 MEMBER 값 → 닉네임을 바꾸면 예전 메시지도 새 닉네임 */
+    private MessageResponse toMessage(PartyMessage m, Long myId) {
+        Member sender = m.getMember();
+        return new MessageResponse(m.getMessageId(), sender.getMemberId(), sender.getNickname(),
+                m.getMsgType(), m.getContent(), m.getCreatedAt(), sender.getMemberId().equals(myId));
     }
 
     private boolean isLeader(Party party, LoginMember login) {

@@ -29,11 +29,8 @@ public class RecommendServiceImpl implements RecommendService {
     /** "새로 문을 연" 기준 일수 (D-9) */
     private static final int NEW_THEME_DAYS = 14;
 
-    /** 평균 별점 높은 순 (후기 없는 테마는 뒤로) → 최신 등록 순 → 번호 큰 순 */
-    private static final Comparator<Theme> BY_RATING =
-            Comparator.comparing(Theme::getAvgRating, Comparator.nullsLast(Comparator.<Double>reverseOrder()))
-                    .thenComparing(Theme::getCreatedAt, Comparator.nullsLast(Comparator.<LocalDateTime>reverseOrder()))
-                    .thenComparing(Theme::getThemeId, Comparator.<Long>reverseOrder());
+    /** 평점순: B-1 sort=rate 와 같은 기준을 그대로 씀 (평균 별점 → 후기 많은 순 → 최신순) */
+    private static final Comparator<Theme> BY_RATING = ThemeServiceImpl.BY_RATING;
 
     private final MemberGenreRepository memberGenreRepository;
     private final GenreRepository genreRepository;

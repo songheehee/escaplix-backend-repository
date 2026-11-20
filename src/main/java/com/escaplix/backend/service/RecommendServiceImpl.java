@@ -124,10 +124,19 @@ public class RecommendServiceImpl implements RecommendService {
             }
         }
 
-        // 5. 선호 장르가 없거나 맞는 테마가 없으면: 평점 상위 5개 (비회원 배너와 같은 기준)
+        // 5. 선호 장르가 없거나 맞는 테마가 없으면: 이번 주 인기 상위 5개 (비회원 배너와 같은 기준, 결정 C2)
+        //    여기서도 이미 후기를 쓴 테마는 뺀다
         if (matched.isEmpty()) {
-            List<Theme> top = publicThemes.stream().sorted(BY_RATING).limit(RECOMMEND_SIZE).toList();
-            return toRecommendItems(top, genresByTheme, now, t -> "평점 높은 인기 테마");
+            List<Theme> notReviewed = publicThemes.stream()
+                    .filter(t -> !reviewedThemeIds.contains(t.getThemeId()))
+                    .toList();
+            Map<Long, Integer> weekly = themeBrowseRepository.weeklyScores(
+                    notReviewed.stream().map(Theme::getThemeId).toList(), now);
+            List<Theme> top = notReviewed.stream()
+                    .sorted(ThemeServiceImpl.byPopular(weekly))
+                    .limit(RECOMMEND_SIZE)
+                    .toList();
+            return toRecommendItems(top, genresByTheme, now, t -> "이번 주 인기 테마");
         }
 
         // 6. 정렬: 겹치는 장르 수 많은 순 → 평균 별점 → 최신, 최대 5개

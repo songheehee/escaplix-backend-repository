@@ -118,7 +118,30 @@ public class ThemeBrowseRepository {
         return map;
     }
 
-    // ---------------------------------------------------------------- 이번 주 인기 (B-1 sort=popular)
+    // ---------------------------------------------------------------- 이번 주 인기 (B-1 sort=popular, D-9 대신 목록)
+
+    /**
+     * 이번 주 인기 점수: 최근 7일 동안 새로 생긴 활동으로 매긴다 (결정 C2)
+     *   점수 = 새 파티 × 3 + 새 찜 × 2 + 새 후기 × 1   (같으면 평점순은 부르는 쪽에서)
+     * 누적이 아니라 최근 7일만 세서, 주마다 순위가 바뀐다
+     */
+    public static final int POPULAR_DAYS = 7;
+    public static final int PARTY_POINT = 3, WISH_POINT = 2, REVIEW_POINT = 1;
+
+    /** 테마별 이번 주 인기 점수 */
+    public Map<Long, Integer> weeklyScores(Collection<Long> themeIds, LocalDateTime now) {
+        LocalDateTime since = now.minusDays(POPULAR_DAYS);
+        Map<Long, Integer> newParties = countPartiesSince(themeIds, since);
+        Map<Long, Integer> newWishes = countWishesSince(themeIds, since);
+        Map<Long, Integer> newReviews = countReviewsSince(themeIds, since);
+        Map<Long, Integer> score = new HashMap<>();
+        for (Long id : themeIds) {
+            score.put(id, newParties.getOrDefault(id, 0) * PARTY_POINT
+                    + newWishes.getOrDefault(id, 0) * WISH_POINT
+                    + newReviews.getOrDefault(id, 0) * REVIEW_POINT);
+        }
+        return score;
+    }
 
     /** 테마별 since 이후 새로 생긴 찜 수 */
     public Map<Long, Integer> countWishesSince(Collection<Long> themeIds, LocalDateTime since) {

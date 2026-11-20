@@ -41,12 +41,13 @@ public class ThemeServiceImpl implements ThemeService {
             .thenComparing(Theme::getThemeId, Comparator.reverseOrder());
 
     /**
-     * 이번 주 인기 (sort=popular): 최근 7일 동안 새로 생긴 활동으로 점수를 매긴다
-     *   점수 = 새 파티 × 3 + 새 찜 × 2 + 새 후기 × 1   (같으면 평점순)
-     * 누적이 아니라 최근 7일만 세서, 주마다 순위가 바뀐다
+     * 이번 주 인기순: 이번 주 점수 높은 순 → 같으면 평점순 (B-1 sort=popular, D-9 대신 목록이 같이 씀)
+     * 점수 계산과 가중치는 ThemeBrowseRepository.weeklyScores
      */
-    static final int POPULAR_DAYS = 7;
-    static final int PARTY_POINT = 3, WISH_POINT = 2, REVIEW_POINT = 1;
+    static Comparator<Theme> byPopular(Map<Long, Integer> weeklyScores) {
+        return Comparator.<Theme>comparingInt(t -> weeklyScores.getOrDefault(t.getThemeId(), 0))
+                .reversed().thenComparing(BY_RATING);
+    }
 
     private final ThemeBrowseRepository browseRepository;
     private final TimeSlotRepository timeSlotRepository;
@@ -81,14 +82,13 @@ public class ThemeServiceImpl implements ThemeService {
         List<Long> ids = themes.stream().map(Theme::getThemeId).toList();
         Map<Long, List<Genre>> genres = browseRepository.findGenresByThemeIds(ids);
         Map<Long, Integer> parties = browseRepository.countRecruitingParties(ids, now);
-        Map<Long, Integer> weekly = weeklyScores(ids, now);
+        Map<Long, Integer> weekly = browseRepository.weeklyScores(ids, now);
         Set<Long> wished = login == null ? Set.of() : browseRepository.findWishedThemeIds(login.memberId());
 
         // 4) 정렬
         Comparator<Theme> order = switch (sort) {
             case "new" -> BY_NEW;
-            case "popular" -> Comparator.<Theme>comparingInt(t -> weekly.getOrDefault(t.getThemeId(), 0))
-                    .reversed().thenComparing(BY_RATING);
+            case "popular" -> byPopular(weekly);
             default -> BY_RATING;
         };
         themes.sort(order);
@@ -196,20 +196,6 @@ public class ThemeServiceImpl implements ThemeService {
 
     // ---------------------------------------------------------------- 도우미
 
-    /** 테마별 이번 주 인기 점수 (최근 POPULAR_DAYS 일) */
-    private Map<Long, Integer> weeklyScores(List<Long> ids, LocalDateTime now) {
-        LocalDateTime since = now.minusDays(POPULAR_DAYS);
-        Map<Long, Integer> newParties = browseRepository.countPartiesSince(ids, since);
-        Map<Long, Integer> newWishes = browseRepository.countWishesSince(ids, since);
-        Map<Long, Integer> newReviews = browseRepository.countReviewsSince(ids, since);
-        Map<Long, Integer> score = new HashMap<>();
-        for (Long id : ids) {
-            score.put(id, newParties.getOrDefault(id, 0) * PARTY_POINT
-                    + newWishes.getOrDefault(id, 0) * WISH_POINT
-                    + newReviews.getOrDefault(id, 0) * REVIEW_POINT);
-        }
-        return score;
-    }
 
     /** 공개된 테마만. 승인 전·반려·운영 종료이거나 매장이 승인 전이면 404 (명세 B-2) */
     private Theme findPublicTheme(Long themeId) {

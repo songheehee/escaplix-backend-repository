@@ -307,7 +307,7 @@ throw ApiException.conflict("이미 사용 중인 아이디입니다.");    // �
 
 1. **팀 채팅에 먼저 공유**합니다. 무엇을, 왜 바꾸는지 적습니다.
 2. **목업 레포의 `docs/ERD.md`·`docs/API.md`를 먼저 고칩니다.**
-3. DB를 바꾸면 **`sql/create_tables.sql`, 엔티티, ERD 세 곳을 같은 PR에서** 바꿉니다.
+3. DB를 바꾸면 **`src/main/resources/sql`, 엔티티, ERD 세 곳을 같은 PR에서** 바꿉니다.
 4. API 주소나 JSON 키를 바꾸면 **프런트 담당에게 꼭 알립니다.** 프런트가 같은 이름을 쓰고 있습니다.
 
 ---

@@ -41,8 +41,23 @@ public class StoreServiceImpl implements StoreService {
         return new ArrayList<>(byRegion.values());
     }
 
+    /** B-9 평점순: 평점 높은 순 → 후기 없는 매장은 뒤 → 같으면 최근 승인 순 */
+    private static final Comparator<StoreListItem> STORE_BY_RATING = Comparator
+            .comparing(StoreListItem::avgRating, Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(StoreListItem::approvedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(StoreListItem::storeId, Comparator.reverseOrder());
+
+    /** B-9 최신순: 처음 승인된 때가 최근인 순 */
+    private static final Comparator<StoreListItem> STORE_BY_NEW = Comparator
+            .comparing(StoreListItem::approvedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(StoreListItem::storeId, Comparator.reverseOrder());
+
     @Override
     public List<StoreListItem> findStores(StoreSearchCondition cond) {
+        String sort = cond.sort() == null || cond.sort().isBlank() ? "rate" : cond.sort().trim();
+        if (!sort.equals("rate") && !sort.equals("new")) {
+            throw ApiException.badRequest("정렬은 rate(평점순), new(최신순)만 고를 수 있습니다.");
+        }
         String area = cond.area() == null || cond.area().isBlank() ? null : cond.area().trim();
         String region = cond.region() == null || cond.region().isBlank() ? null : cond.region().trim();
         List<Store> stores = browseRepository.findApprovedStores(area, region, ThemeBrowseRepository.likePattern(cond.keyword()));
@@ -62,7 +77,7 @@ public class StoreServiceImpl implements StoreService {
             int partyCount = themes.stream().mapToInt(t -> parties.getOrDefault(t.getThemeId(), 0)).sum();
             return new StoreListItem(s.getStoreId(), s.getName(), s.getArea(), s.getAddress(), s.getHours(),
                     s.getPhotoUrl(), storeGenres, themes.size(), storeRating(themes), partyCount, s.getApprovedAt());
-        }).toList();
+        }).sorted(sort.equals("new") ? STORE_BY_NEW : STORE_BY_RATING).toList();
     }
 
     @Override

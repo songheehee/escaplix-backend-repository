@@ -72,7 +72,7 @@ public class ThemeServiceImpl implements ThemeService {
             dayType = dayTypeResolver.of(cond.date());
         }
 
-        // 2) 찾기 (keyword: 테마 이름 또는 매장 이름, 띄어쓰기 무시)
+        // 2) 찾기 (keyword: 테마 이름만, 띄어쓰기 무시)
         List<Theme> themes = new ArrayList<>(browseRepository.findPublicThemes(
                 blankToNull(cond.area()), blankToNull(cond.region()), cond.people(),
                 ThemeBrowseRepository.likePattern(cond.keyword()), cond.genreId(), dayType));

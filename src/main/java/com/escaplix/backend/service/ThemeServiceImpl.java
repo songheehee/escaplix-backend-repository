@@ -74,7 +74,7 @@ public class ThemeServiceImpl implements ThemeService {
 
         // 2) 찾기 (keyword: 테마 이름 또는 매장 이름, 띄어쓰기 무시)
         List<Theme> themes = new ArrayList<>(browseRepository.findPublicThemes(
-                blankToNull(cond.area()), cond.people(),
+                blankToNull(cond.area()), blankToNull(cond.region()), cond.people(),
                 ThemeBrowseRepository.likePattern(cond.keyword()), cond.genreId(), dayType));
 
         // 3) 장르·파티 수·찜 여부·이번 주 점수는 테마마다 묻지 않고 한 번에

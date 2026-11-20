@@ -100,7 +100,7 @@ public class RecommendServiceImpl implements RecommendService {
                 .collect(Collectors.toSet());
 
         // 2. 공개 테마 전부 (테마 OPEN + 매장 APPROVED, 매장 함께) 와 테마별 장르 (한 번에)
-        List<Theme> publicThemes = themeBrowseRepository.findPublicThemes(null, null, null, null, null);
+        List<Theme> publicThemes = themeBrowseRepository.findPublicThemes(null, null, null, null, null, null);
         Map<Long, List<Genre>> genresByTheme = themeBrowseRepository.findGenresByThemeIds(
                 publicThemes.stream().map(Theme::getThemeId).toList());
 

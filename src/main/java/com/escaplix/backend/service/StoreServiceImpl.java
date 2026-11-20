@@ -44,7 +44,8 @@ public class StoreServiceImpl implements StoreService {
     @Override
     public List<StoreListItem> findStores(StoreSearchCondition cond) {
         String area = cond.area() == null || cond.area().isBlank() ? null : cond.area().trim();
-        List<Store> stores = browseRepository.findApprovedStores(area, ThemeBrowseRepository.likePattern(cond.keyword()));
+        String region = cond.region() == null || cond.region().isBlank() ? null : cond.region().trim();
+        List<Store> stores = browseRepository.findApprovedStores(area, region, ThemeBrowseRepository.likePattern(cond.keyword()));
 
         Map<Long, List<Theme>> themesByStore = openThemesByStore(stores);
         List<Long> themeIds = themesByStore.values().stream().flatMap(List::stream).map(Theme::getThemeId).toList();

@@ -29,8 +29,9 @@ public class ThemeBrowseRepository {
      * B-1 공개 테마 검색. null 인 조건은 빼고 묻는다. 정렬은 서비스에서 (평균 별점은 계산 값이라)
      * @param keywordLike 띄어쓰기를 지운 검색어로 만든 LIKE 패턴 (likePattern 으로 만든다)
      * @param dayType     그날 유형 시간표가 하나라도 있는 테마만
+     * @param region      큰 지역 이름. area(세부 지역)가 있으면 무시
      */
-    public List<Theme> findPublicThemes(String area, Integer people, String keywordLike, Long genreId, DayType dayType) {
+    public List<Theme> findPublicThemes(String area, String region, Integer people, String keywordLike, Long genreId, DayType dayType) {
         StringBuilder jpql = new StringBuilder(
                 "select t from Theme t join fetch t.store s" +
                 " where t.status = :open and s.status = :approved");
@@ -41,6 +42,10 @@ public class ThemeBrowseRepository {
         if (area != null) {
             jpql.append(" and s.area = :area");
             params.put("area", area);
+        } else if (region != null) {
+            // 큰 지역: 그 지역에 묶인 세부 지역 매장 전부
+            jpql.append(" and s.area in (select a.name from Area a where a.region.name = :region)");
+            params.put("region", region);
         }
         if (people != null) {
             jpql.append(" and t.minPeople <= :people and t.maxPeople >= :people");
@@ -208,15 +213,18 @@ public class ThemeBrowseRepository {
     // ---------------------------------------------------------------- 매장
 
     /** B-9 승인된 매장 검색 (이름 순) */
-    public List<Store> findApprovedStores(String area, String keywordLike) {
+    public List<Store> findApprovedStores(String area, String region, String keywordLike) {
+        if (area != null) region = null;   // 세부 지역이 있으면 그게 우선
         StringBuilder jpql = new StringBuilder("select s from Store s where s.status = :approved");
         if (area != null) jpql.append(" and s.area = :area");
+        if (region != null) jpql.append(" and s.area in (select a.name from Area a where a.region.name = :region)");
         if (keywordLike != null) jpql.append(" and replace(s.name, ' ', '') like :kw escape '\\'");
         jpql.append(" order by s.name, s.storeId");
 
         TypedQuery<Store> q = em.createQuery(jpql.toString(), Store.class)
                 .setParameter("approved", StoreStatus.APPROVED);
         if (area != null) q.setParameter("area", area);
+        if (region != null) q.setParameter("region", region);
         if (keywordLike != null) q.setParameter("kw", keywordLike);
         return q.getResultList();
     }

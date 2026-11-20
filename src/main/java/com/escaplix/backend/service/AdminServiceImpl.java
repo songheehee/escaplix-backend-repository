@@ -106,6 +106,7 @@ public class AdminServiceImpl implements AdminService {
         if (req.approved()) {
             s.setStatus(StoreStatus.APPROVED);
             s.setRejectReason(null);
+            if (s.getApprovedAt() == null) s.setApprovedAt(LocalDateTime.now());   // 처음 승인 때만 (NEW 기준)
         } else {
             s.setStatus(StoreStatus.REJECTED);
             s.setRejectReason(requireReason(req));   // 사장 홈(C-1)에 보인다 (결정 S4)

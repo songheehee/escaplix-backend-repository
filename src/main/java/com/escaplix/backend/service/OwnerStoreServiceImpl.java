@@ -7,6 +7,7 @@ import com.escaplix.backend.entity.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import com.escaplix.backend.common.file.FileStorage;
 import com.escaplix.backend.repository.*;
@@ -69,6 +70,7 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
             // 관리자 직접 등록: 바로 공개 (결정 S3)
             store.setOwner(null);
             store.setStatus(StoreStatus.APPROVED);
+            store.setApprovedAt(LocalDateTime.now());   // NEW 기준
         } else {
             store.setOwner(memberRepository.getReferenceById(login.memberId()));
             store.setStatus(StoreStatus.PENDING);

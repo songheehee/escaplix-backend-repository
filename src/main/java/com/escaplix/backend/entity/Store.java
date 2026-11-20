@@ -74,6 +74,10 @@ public class Store {
     @Column(name = "reject_reason", length = 900)
     private String rejectReason;
 
+    /** 처음 승인된 때 (손님 화면 NEW 30일 기준). 수정 뒤 다시 승인돼도 안 바꿈. APPROVED 면 필수 (CHECK store_approved_ck) */
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 }

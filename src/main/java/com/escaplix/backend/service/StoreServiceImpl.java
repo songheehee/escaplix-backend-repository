@@ -60,7 +60,7 @@ public class StoreServiceImpl implements StoreService {
                     .values().stream().toList();
             int partyCount = themes.stream().mapToInt(t -> parties.getOrDefault(t.getThemeId(), 0)).sum();
             return new StoreListItem(s.getStoreId(), s.getName(), s.getArea(), s.getAddress(), s.getHours(),
-                    s.getPhotoUrl(), storeGenres, themes.size(), storeRating(themes), partyCount);
+                    s.getPhotoUrl(), storeGenres, themes.size(), storeRating(themes), partyCount, s.getApprovedAt());
         }).toList();
     }
 

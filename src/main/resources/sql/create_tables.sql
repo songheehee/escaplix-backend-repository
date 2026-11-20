@@ -120,6 +120,7 @@ CREATE TABLE store (
     biz_place_file_path  VARCHAR2(500),                       -- 사업장등록증 경로, 비공개 폴더
     status               VARCHAR2(10)   DEFAULT 'PENDING' NOT NULL,
     reject_reason        VARCHAR2(900),                       -- 반려 사유 (관리자 작성, 한글 300자)
+    approved_at          DATE,                                -- 처음 승인된 때 (손님 화면 NEW 30일 기준). 수정 뒤 다시 승인돼도 안 바뀜
     created_at           DATE           DEFAULT SYSDATE NOT NULL,
     CONSTRAINT store_pk           PRIMARY KEY (store_id),
     CONSTRAINT store_owner_fk     FOREIGN KEY (owner_id) REFERENCES member(member_id),
@@ -127,7 +128,8 @@ CREATE TABLE store (
     CONSTRAINT store_biz_place_uk UNIQUE (biz_place_no),
     CONSTRAINT store_status_ck    CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
     CONSTRAINT store_file_ck      CHECK (owner_id IS NULL OR biz_place_file_path IS NOT NULL),
-    CONSTRAINT store_reject_ck    CHECK (status <> 'REJECTED' OR reject_reason IS NOT NULL)
+    CONSTRAINT store_reject_ck    CHECK (status <> 'REJECTED' OR reject_reason IS NOT NULL),
+    CONSTRAINT store_approved_ck  CHECK (status <> 'APPROVED' OR approved_at IS NOT NULL)
 );
 
 -- 6. 테마 (등록·수정 → PENDING → 승인 OPEN / 반려 REJECTED + 사유, 운영 종료 CLOSED)

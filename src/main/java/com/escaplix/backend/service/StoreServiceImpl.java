@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * StoreService 구현 (B 담당). 명세: docs/API.md B-8 ~ B-11
+ * StoreService 구현 (B 담당). 명세: docs/API.md B-8 ~ B-10, B-12
  * 손님에게 보이는 매장은 APPROVED 만. 매장의 장르·테마 수·평점·파티 수는 그 매장의 OPEN 테마로 계산한다.
  */
 @Service
@@ -85,16 +85,6 @@ public class StoreServiceImpl implements StoreService {
 
         return new StoreDetailResponse(s.getStoreId(), s.getName(), s.getArea(), s.getAddress(), s.getPhone(),
                 s.getWebsiteUrl(), s.getHours(), s.getIntro(), s.getPhotoUrl(), s.getLat(), s.getLng(), storeRating(themes), items);
-    }
-
-    @Override
-    public List<StoreMapItem> getMapStores() {
-        List<Store> stores = browseRepository.findApprovedStoresWithLocation();
-        Map<Long, List<Theme>> themesByStore = openThemesByStore(stores);
-        return stores.stream()
-                .map(s -> new StoreMapItem(s.getStoreId(), s.getName(), s.getArea(), s.getLat(), s.getLng(),
-                        themesByStore.getOrDefault(s.getStoreId(), List.of()).size()))
-                .toList();
     }
 
     // ---------------------------------------------------------------- 도우미

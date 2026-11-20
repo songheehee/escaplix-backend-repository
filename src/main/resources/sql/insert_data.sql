@@ -120,19 +120,20 @@ INSERT INTO holiday (holiday_date, name) VALUES (DATE '2027-12-27', '성탄절 �
 
 
 -- 4. 매장 (승인 4 : 사장 3 + 관리자 직접 등록 1 / 대기 1 / 반려 1)
-INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
+--    approved_at: 처음 승인된 때. 4번(신촌)은 10일 전이라 손님 화면에 NEW (30일 기준)
+INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status, approved_at) VALUES
   (1, 2, '미로이스케이프 홍대점', '홍대', '서울 마포구 와우산로 00, 지하 1층', '02-111-1111', 'https://miro-escape.example.com',
-   '10:00 ~ 23:00 (연중무휴)', '홍대입구역 9번 출구 도보 5분. 공포와 추리 테마 전문 매장입니다.', '/uploads/stores/common-01.jpg', 37.556100, 126.923500, '110-81-00001', '/private/store/1.pdf', 'APPROVED');
-INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
+   '10:00 ~ 23:00 (연중무휴)', '홍대입구역 9번 출구 도보 5분. 공포와 추리 테마 전문 매장입니다.', '/uploads/stores/common-01.jpg', 37.556100, 126.923500, '110-81-00001', '/private/store/1.pdf', 'APPROVED', TRUNC(SYSDATE) - 120);
+INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status, approved_at) VALUES
   (2, 3, '타임락 강남점', '강남', '서울 강남구 테헤란로 00, 3층', '02-222-2222', 'https://timelock.example.com',
-   '11:00 ~ 24:00 (월요일 휴무)', '강남역 11번 출구 바로 앞. 고난도 테마가 많은 매장입니다.', '/uploads/stores/common-05.jpg', 37.498000, 127.027600, '120-81-00002', '/private/store/2.pdf', 'APPROVED');
-INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
+   '11:00 ~ 24:00 (월요일 휴무)', '강남역 11번 출구 바로 앞. 고난도 테마가 많은 매장입니다.', '/uploads/stores/common-05.jpg', 37.498000, 127.027600, '120-81-00002', '/private/store/2.pdf', 'APPROVED', TRUNC(SYSDATE) - 90);
+INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status, approved_at) VALUES
   (3, 4, '퍼즐하우스 건대점', '건대', '서울 광진구 아차산로 00, 2층', '02-333-3333', 'https://puzzlehouse.example.com',
-   '12:00 ~ 23:00 (연중무휴)', '건대입구역 2번 출구 도보 3분. 감성 스토리와 SF 테마를 운영합니다.', '/uploads/stores/common-06.jpg', 37.540400, 127.069200, '130-81-00003', '/private/store/3.pdf', 'APPROVED');
+   '12:00 ~ 23:00 (연중무휴)', '건대입구역 2번 출구 도보 3분. 감성 스토리와 SF 테마를 운영합니다.', '/uploads/stores/common-06.jpg', 37.540400, 127.069200, '130-81-00003', '/private/store/3.pdf', 'APPROVED', TRUNC(SYSDATE) - 60);
 -- 관리자가 직접 등록한 매장 (owner_id NULL, 사업장등록증 없음)
-INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
+INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status, approved_at) VALUES
   (4, NULL, '비밀의방 신촌점', '신촌', '서울 서대문구 연세로 00, 4층', '02-444-4444', 'https://secretroom.example.com',
-   '13:00 ~ 22:00 (화요일 휴무)', '신촌역 3번 출구 도보 7분. 처음 하는 분도 즐기기 좋은 매장입니다.', '/uploads/stores/common-04.jpg', 37.555900, 126.936900, '140-81-00004', NULL, 'APPROVED');
+   '13:00 ~ 22:00 (화요일 휴무)', '신촌역 3번 출구 도보 7분. 처음 하는 분도 즐기기 좋은 매장입니다.', '/uploads/stores/common-04.jpg', 37.555900, 126.936900, '140-81-00004', NULL, 'APPROVED', TRUNC(SYSDATE) - 10);
 -- 승인 대기
 INSERT INTO store (store_id, owner_id, name, area, address, phone, website_url, hours, intro, photo_url, lat, lng, biz_place_no, biz_place_file_path, status) VALUES
   (5, 2, '미로이스케이프 강남점', '강남', '서울 강남구 강남대로 00, 5층', '02-555-5555', 'https://miro-escape.example.com/gangnam',

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * B · 손님 화면(테마·매장 탐색)용 조회 모음 (B-1 ~ B-11).
+ * B · 손님 화면(테마·매장 탐색)용 조회 모음 (B-1 ~ B-10).
  * 조건이 많아서 JPQL 을 직접 쓴다. 값은 모두 setParameter 로 바인딩한다 (문자열 이어 붙이기 금지, 명세 1-7).
  * "공개된 테마" = THEME.status = OPEN 이면서 STORE.status = APPROVED.
  */
@@ -77,7 +77,7 @@ public class ThemeBrowseRepository {
                 .getResultStream().findFirst();
     }
 
-    /** B-9·B-10·B-11 여러 매장의 OPEN 테마 (매장 승인 여부는 부르는 쪽에서 이미 거름) */
+    /** B-9·B-10 여러 매장의 OPEN 테마 (매장 승인 여부는 부르는 쪽에서 이미 거름) */
     public List<Theme> findOpenThemesOfStores(Collection<Long> storeIds) {
         return inChunks(storeIds, ids -> em.createQuery(
                         "select t from Theme t join fetch t.store s" +
@@ -227,15 +227,6 @@ public class ThemeBrowseRepository {
                 .setParameter("id", storeId)
                 .setParameter("approved", StoreStatus.APPROVED)
                 .getResultStream().findFirst();
-    }
-
-    /** B-11 승인되었고 위치(lat·lng)가 둘 다 있는 매장 */
-    public List<Store> findApprovedStoresWithLocation() {
-        return em.createQuery(
-                        "select s from Store s where s.status = :approved" +
-                        " and s.lat is not null and s.lng is not null order by s.name, s.storeId", Store.class)
-                .setParameter("approved", StoreStatus.APPROVED)
-                .getResultList();
     }
 
     // ---------------------------------------------------------------- 도우미

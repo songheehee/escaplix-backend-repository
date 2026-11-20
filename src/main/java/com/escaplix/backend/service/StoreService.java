@@ -13,7 +13,7 @@ import com.escaplix.backend.dto.theme.*;
 import com.escaplix.backend.entity.*;
 import java.util.List;
 
-/** B 담당 · 매장 탐색 (B-8 ~ B-11). 명세: docs/API.md (목업 레포) */
+/** B 담당 · 매장 탐색 (B-8 ~ B-10, B-12). 명세: docs/API.md (목업 레포) */
 public interface StoreService {
 
     /** B-8 지역 목록 (검색용: 승인된 매장이 있는 세부 지역만) */
@@ -27,7 +27,4 @@ public interface StoreService {
 
     /** B-10 매장 상세 */
     StoreDetailResponse getStore(Long storeId);
-
-    /** B-11 지도용 매장 (선택 기능) */
-    List<StoreMapItem> getMapStores();
 }

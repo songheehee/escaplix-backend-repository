@@ -142,7 +142,7 @@ CREATE TABLE theme (
     play_minutes   NUMBER(3)       NOT NULL,                 -- 제한 시간 (분)
     min_people     NUMBER(2)       NOT NULL,
     max_people     NUMBER(2)       NOT NULL,
-    price          NUMBER(7)       NOT NULL,                 -- 1인 가격, 인원 상관없이 고정
+    price          NUMBER(7)       NOT NULL,                 -- 1인 기준 가격 (인원별 가격은 저장 안 함. 정확한 건 booking_url)
     poster_url     VARCHAR2(500),                            -- 테마 사진 경로 (공개 폴더)
     booking_url    VARCHAR2(500)   NOT NULL,                 -- 이 테마 예약 링크. http(s):// (서버 검사)
     source         VARCHAR2(10)    DEFAULT 'OWNER' NOT NULL,  -- OWNER / ADMIN / CRAWL

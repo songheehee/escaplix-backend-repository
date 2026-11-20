@@ -40,10 +40,5 @@ public class StoreController {
     public StoreDetailResponse getStore(@PathVariable Long storeId) {
         return storeService.getStore(storeId);
     }
-
-    /** B-11 지도용 매장 (선택 기능) · 공개 · 200 */
-    @GetMapping("/api/stores/map")
-    public List<StoreMapItem> getMapStores() {
-        return storeService.getMapStores();
-    }
+    // B-11 지도용 매장은 없앰 (지도는 매장 상세 B-10 의 lat·lng 로 화면에서 그림)
 }

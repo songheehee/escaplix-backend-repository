@@ -1,11 +1,15 @@
 package com.escaplix.backend.service;
 
 import com.escaplix.backend.common.auth.JwtProvider;
+import com.escaplix.backend.entity.Area;
 import com.escaplix.backend.entity.Genre;
 import com.escaplix.backend.entity.Member;
+import com.escaplix.backend.entity.Region;
 import com.escaplix.backend.entity.Role;
+import com.escaplix.backend.repository.AreaRepository;
 import com.escaplix.backend.repository.GenreRepository;
 import com.escaplix.backend.repository.MemberRepository;
+import com.escaplix.backend.repository.RegionRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +43,8 @@ class OwnerAdminFlowTests {
     @Autowired JwtProvider jwtProvider;
     @Autowired MemberRepository memberRepository;
     @Autowired GenreRepository genreRepository;
+    @Autowired RegionRepository regionRepository;
+    @Autowired AreaRepository areaRepository;
 
     MockMvc mvc;
     String tag;
@@ -47,6 +53,21 @@ class OwnerAdminFlowTests {
     void setUp() {
         mvc = MockMvcBuilders.webAppContextSetup(context).build();
         tag = String.valueOf(ThreadLocalRandom.current().nextInt(10000, 99999));
+        saveArea("홍대");   // 매장 등록·수정은 AREA 표에 있는 지역만 받음 (결정 L1)
+    }
+
+    /** 세부 지역이 없으면 넣는다 (H2 는 테스트끼리 데이터를 같이 씀) */
+    private void saveArea(String name) {
+        if (areaRepository.existsByName(name)) return;
+        Region r = new Region();
+        r.setName("테스트지역" + tag);
+        r.setSortOrder(1);
+        regionRepository.save(r);
+        Area a = new Area();
+        a.setRegion(r);
+        a.setName(name);
+        a.setSortOrder(1);
+        areaRepository.save(a);
     }
 
     @Test
@@ -57,6 +78,13 @@ class OwnerAdminFlowTests {
         long horror = saveGenre("공포");
         long mystery = saveGenre("추리");
         String bizPlaceNo = "123-45-" + tag;
+
+        // C-3 목록에 없는 지역은 400
+        mvc.perform(storeForm(multipart("/api/owner/stores"), bizPlaceNo, "없는동네")
+                        .file(new MockMultipartFile("bizPlaceFile", "place.png", "image/png", PNG))
+                        .header("Authorization", owner1))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("지역은 목록에서 골라 주세요."));
 
         // C-3 사장은 사업장등록증 필수
         mvc.perform(storeForm(multipart("/api/owner/stores"), bizPlaceNo).header("Authorization", owner1))
@@ -218,9 +246,13 @@ class OwnerAdminFlowTests {
     }
 
     private static MockMultipartHttpServletRequestBuilder storeForm(MockMultipartHttpServletRequestBuilder b, String bizPlaceNo) {
+        return storeForm(b, bizPlaceNo, "홍대");
+    }
+
+    private static MockMultipartHttpServletRequestBuilder storeForm(MockMultipartHttpServletRequestBuilder b, String bizPlaceNo, String area) {
         return (MockMultipartHttpServletRequestBuilder) b
                 .param("name", "테스트 매장")
-                .param("area", "홍대")
+                .param("area", area)
                 .param("address", "서울 마포구")
                 .param("phone", "02-000-0001")
                 .param("websiteUrl", "https://example.com")

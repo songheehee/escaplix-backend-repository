@@ -36,6 +36,60 @@ INSERT INTO genre (genre_id, name) VALUES (6, '판타지');
 INSERT INTO genre (genre_id, name) VALUES (7, 'SF');
 INSERT INTO genre (genre_id, name) VALUES (8, '모험');
 
+-- 2-1. 큰 지역 / 세부 지역 (매장보다 먼저. store.area 는 아래 세부 지역 이름 중 하나여야 함)
+INSERT INTO region (region_id, name, sort_order) VALUES (1, '서울', 1);
+INSERT INTO region (region_id, name, sort_order) VALUES (2, '경기', 2);
+INSERT INTO region (region_id, name, sort_order) VALUES (3, '인천', 3);
+INSERT INTO region (region_id, name, sort_order) VALUES (4, '충청', 4);
+INSERT INTO region (region_id, name, sort_order) VALUES (5, '경상', 5);
+INSERT INTO region (region_id, name, sort_order) VALUES (6, '전라', 6);
+INSERT INTO region (region_id, name, sort_order) VALUES (7, '강원', 7);
+INSERT INTO region (region_id, name, sort_order) VALUES (8, '제주', 8);
+
+-- 서울
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (1 , 1, '홍대', 1);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (2 , 1, '신촌', 2);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (3 , 1, '강남', 3);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (4 , 1, '건대', 4);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (5 , 1, '잠실', 5);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (6 , 1, '대학로', 6);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (7 , 1, '성수', 7);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (8 , 1, '신림', 8);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (9 , 1, '노원', 9);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (10, 1, '영등포', 10);
+-- 경기
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (11, 2, '수원', 1);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (12, 2, '부천', 2);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (13, 2, '일산', 3);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (14, 2, '분당', 4);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (15, 2, '안산', 5);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (16, 2, '평택', 6);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (17, 2, '의정부', 7);
+-- 인천
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (18, 3, '부평', 1);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (19, 3, '구월동', 2);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (20, 3, '송도', 3);
+-- 충청
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (21, 4, '대전', 1);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (22, 4, '천안', 2);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (23, 4, '청주', 3);
+-- 경상
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (24, 5, '부산', 1);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (25, 5, '대구', 2);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (26, 5, '울산', 3);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (27, 5, '창원', 4);
+-- 전라
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (28, 6, '광주', 1);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (29, 6, '전주', 2);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (30, 6, '여수', 3);
+-- 강원
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (31, 7, '춘천', 1);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (32, 7, '강릉', 2);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (33, 7, '원주', 3);
+-- 제주
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (34, 8, '제주시', 1);
+INSERT INTO area (area_id, region_id, name, sort_order) VALUES (35, 8, '서귀포', 2);
+
 
 -- 3. 공휴일 (2026 남은 날 + 2027 전체, 대체공휴일 포함)
 INSERT INTO holiday (holiday_date, name) VALUES (DATE '2026-12-25', '성탄절');
@@ -297,6 +351,8 @@ BEGIN
     reset_seq('sq_member',        'member',        'member_id');
     reset_seq('sq_genre',         'genre',         'genre_id');
     reset_seq('sq_store',         'store',         'store_id');
+    reset_seq('sq_region',        'region',        'region_id');
+    reset_seq('sq_area',          'area',          'area_id');
     reset_seq('sq_theme',         'theme',         'theme_id');
     reset_seq('sq_theme_genre',   'theme_genre',   'id');
     reset_seq('sq_time_slot',     'time_slot',     'slot_id');
@@ -312,7 +368,7 @@ END;
 
 
 -- 16. 확인용
--- 테이블별 줄 수 : member 10, genre 8, holiday 25, store 6, theme 10, theme_genre 15, time_slot 70,
+-- 테이블별 줄 수 : member 10, genre 8, region 8, area 35, holiday 25, store 6, theme 10, theme_genre 15, time_slot 70,
 --                  member_genre 12, wishlist 8, review 14, report 3, party 5, party_member 11, party_message 13
 SELECT 'member' t, COUNT(*) cnt FROM member UNION ALL
 SELECT 'store', COUNT(*) FROM store UNION ALL

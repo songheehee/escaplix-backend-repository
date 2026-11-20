@@ -21,13 +21,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class StoreServiceImpl implements StoreService {
 
     private final ThemeBrowseRepository browseRepository;
+    private final AreaRepository areaRepository;
 
     @Override
     public List<String> getAreas() {
-        // 가나다순 (DB 정렬 설정과 상관없이 같은 결과가 나오게 자바에서 정렬)
-        List<String> areas = new ArrayList<>(browseRepository.findApprovedAreas());
-        Collections.sort(areas);
-        return areas;
+        // 승인된 매장이 있는 세부 지역만. 순서는 AREA 표 순서 (서울 → 경기 → ..., 그 안에서 sort_order)
+        return areaRepository.findNamesWithApprovedStores();
+    }
+
+    @Override
+    public List<RegionResponse> getRegions() {
+        // 큰 지역별로 묶기. 순서를 지키려고 LinkedHashMap
+        Map<Long, RegionResponse> byRegion = new LinkedHashMap<>();
+        for (Area a : areaRepository.findAllOrdered()) {
+            Region r = a.getRegion();
+            byRegion.computeIfAbsent(r.getRegionId(), id -> new RegionResponse(id, r.getName(), new ArrayList<>()))
+                    .areas().add(new RegionResponse.AreaItem(a.getAreaId(), a.getName()));
+        }
+        return new ArrayList<>(byRegion.values());
     }
 
     @Override

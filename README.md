@@ -28,7 +28,7 @@
 | 담당 | controller | service | dto | entity · repository |
 | --- | --- | --- | --- | --- |
 | A | `MemberController`, `AdminMemberController`, `PartyController` | `MemberService(Impl)`, `PartyService(Impl)` | `dto/member`, `dto/party` | Member, Party, PartyMember, PartyMessage |
-| B | `ThemeController`, `StoreController` | `ThemeService(Impl)`, `StoreService(Impl)` | `dto/theme`, `dto/store` | Wishlist |
+| B | `ThemeController`, `StoreController` | `ThemeService(Impl)`, `StoreService(Impl)` | `dto/theme`, `dto/store` | Wishlist, Region, Area |
 | C | `OwnerStoreController`, `OwnerThemeController`, `AdminController` | `OwnerStoreService(Impl)`, `OwnerThemeService(Impl)`, `AdminService(Impl)` | `dto/owner`, `dto/admin` | Store, Theme, ThemeGenre, TimeSlot, Genre, Holiday |
 | D | `ReviewController`, `MyRecordController` | `ReviewService(Impl)`, `RecommendService(Impl)` | `dto/review` | Review, Report, MemberGenre |
 
@@ -83,23 +83,23 @@ Git Bash:
 
 ```bash
 export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
-echo exit | MSYS_NO_PATHCONV=1 sqlplus -S 'hr/비번@localhost:1521/xe' @sql/create_tables.sql
-echo exit | MSYS_NO_PATHCONV=1 sqlplus -S 'hr/비번@localhost:1521/xe' @sql/insert_data.sql
+echo exit | MSYS_NO_PATHCONV=1 sqlplus -S 'hr/비번@localhost:1521/xe' @src/main/resources/sql/create_tables.sql
+echo exit | MSYS_NO_PATHCONV=1 sqlplus -S 'hr/비번@localhost:1521/xe' @src/main/resources/sql/insert_data.sql
 ```
 
 PowerShell:
 
 ```powershell
 $env:NLS_LANG="AMERICAN_AMERICA.AL32UTF8"
-sqlplus 'hr/비번@localhost:1521/xe' '@sql/create_tables.sql'   # 끝나면 exit 입력
-sqlplus 'hr/비번@localhost:1521/xe' '@sql/insert_data.sql'     # 끝나면 exit 입력
+sqlplus 'hr/비번@localhost:1521/xe' '@src/main/resources/sql/create_tables.sql'   # 끝나면 exit 입력
+sqlplus 'hr/비번@localhost:1521/xe' '@src/main/resources/sql/insert_data.sql'     # 끝나면 exit 입력
 ```
 
 - `비번` 자리에 ①에서 정한 hr 비밀번호를 넣습니다. 작은따옴표 안이라 특수문자가 있어도 됩니다.
 - Git Bash의 `echo exit |`는 끝나면 `SQL>`에 멈추지 않고 빠져나오게 합니다. PowerShell은 이걸 붙이면 `SP2-0042` 경고가 나서 빼고, 끝난 뒤 `SQL>`에 `exit`를 직접 칩니다.
 - `sqlplus`를 못 찾으면 전체 경로로: Git Bash `/c/oraclexe/app/oracle/product/11.2.0/server/bin/sqlplus`, PowerShell `& "C:\oraclexe\app\oracle\product\11.2.0\server\bin\sqlplus.exe"`
 - `create_tables.sql`을 **처음** 돌릴 때 나오는 `ORA-00942`·`ORA-02289`(지울 대상 없음)는 정상입니다.
-- 성공 기준: Table created 14개, Sequence created 13개, Trigger created 2개. `insert_data.sql`은 에러 없이 `Commit complete.`
+- 성공 기준: Table created 16개, Sequence created 15개, Trigger created 2개. `insert_data.sql`은 에러 없이 `Commit complete.`
 - **데이터가 꼬였으면 두 파일을 처음부터 다시** 돌립니다. `create_tables.sql`은 맨 앞에서 우리 테이블을 지우고 새로 만듭니다(hr 예제 테이블 EMPLOYEES 등은 안 건드림).
 - SQL Developer로 하고 싶으면: 도구 → 환경설정 → 환경 → 인코딩을 `UTF-8`로 바꾼 뒤 파일을 다시 열고 F5(스크립트 실행).
 
@@ -170,8 +170,8 @@ PowerShell:
 src/main/java/com/escaplix/backend
 ├── controller/        컨트롤러 10개: 주소·권한만. 받고 서비스로 넘긴다
 ├── service/        XxxService(인터페이스) + XxxServiceImpl(구현): 검사·권한 확인·트랜잭션
-├── repository/     JpaRepository 14개
-├── entity/         테이블 14개 + 상태값 enum 10개
+├── repository/     JpaRepository 16개 + 조건이 많은 조회 모음 2개 (ThemeBrowseRepository, PartyBrowseRepository)
+├── entity/         테이블 16개 + 상태값 enum 10개
 ├── dto/            요청·응답 record (member, party, theme, store, owner, admin, review)
 ├── common/         공용 (A)
 │   ├── auth/       @Auth, LoginMember, JwtProvider, AuthInterceptor

@@ -1,6 +1,6 @@
 -- 방탈출 통합예약 (Escaplix) : 테이블 생성 v3 (hr 계정에서 실행)
 -- docs/ERD.md 와 짝. 11/18 팀 결정(ERD 8번 표) 반영
--- Oracle XE 11g, 서버 1개(모놀리식). 테이블 14개 + 트리거 2개
+-- Oracle XE 11g, 서버 1개(모놀리식). 테이블 16개 + 트리거 2개
 --  * 한글 1글자 = 3바이트 (AL32UTF8). VARCHAR2 크기는 바이트
 --  * 서버가 하나라 회원번호 컬럼도 전부 진짜 FK. 닉네임은 복사하지 않고 MEMBER 와 JOIN
 --  * 매장·테마·파티는 DELETE 하지 말고 status 로 관리
@@ -19,6 +19,8 @@ DROP TABLE time_slot;
 DROP TABLE theme_genre;
 DROP TABLE theme;
 DROP TABLE store;
+DROP TABLE area;
+DROP TABLE region;
 DROP TABLE holiday;
 DROP TABLE genre;
 DROP TABLE member;
@@ -28,6 +30,8 @@ DROP TABLE brand;
 DROP SEQUENCE sq_member;
 DROP SEQUENCE sq_genre;
 DROP SEQUENCE sq_store;
+DROP SEQUENCE sq_region;
+DROP SEQUENCE sq_area;
 DROP SEQUENCE sq_theme;
 DROP SEQUENCE sq_theme_genre;
 DROP SEQUENCE sq_time_slot;
@@ -77,12 +81,33 @@ CREATE TABLE holiday (
     CONSTRAINT holiday_date_ck CHECK (holiday_date = TRUNC(holiday_date))
 );
 
+-- 4-1. 큰 지역 (코드 테이블). 서울 / 경기 / 인천 / 충청 / 경상 / 전라 / 강원 / 제주
+CREATE TABLE region (
+    region_id   NUMBER        NOT NULL,
+    name        VARCHAR2(30)  NOT NULL,
+    sort_order  NUMBER(3)     NOT NULL,                      -- 화면에 보일 순서 (작을수록 앞)
+    CONSTRAINT region_pk      PRIMARY KEY (region_id),
+    CONSTRAINT region_name_uk UNIQUE (name)
+);
+
+-- 4-2. 세부 지역 (코드 테이블). 홍대 / 강남 / 건대 ... 매장 등록 화면의 select 와 검색 지역 칩
+--      store.area 에 이 name 이 그대로 들어간다 (FK). 그래서 name 은 전체에서 겹치면 안 된다
+CREATE TABLE area (
+    area_id     NUMBER        NOT NULL,
+    region_id   NUMBER        NOT NULL,
+    name        VARCHAR2(30)  NOT NULL,                      -- 한글 10자
+    sort_order  NUMBER(3)     NOT NULL,                      -- 큰 지역 안에서의 순서
+    CONSTRAINT area_pk        PRIMARY KEY (area_id),
+    CONSTRAINT area_region_fk FOREIGN KEY (region_id) REFERENCES region(region_id),
+    CONSTRAINT area_name_uk   UNIQUE (name)
+);
+
 -- 5. 매장 (사장 등록·수정 → PENDING → 관리자 승인 APPROVED / 반려 REJECTED + 사유)
 CREATE TABLE store (
     store_id             NUMBER         NOT NULL,
     owner_id             NUMBER,                              -- 등록한 사장. 관리자 직접 등록이면 NULL
     name                 VARCHAR2(150)  NOT NULL,             -- 한글 50자
-    area                 VARCHAR2(30)   NOT NULL,             -- 홍대 / 강남 / 건대 / 신촌 ...
+    area                 VARCHAR2(30)   NOT NULL,             -- 세부 지역 이름 (area.name). 홍대 / 강남 / 건대 ...
     address              VARCHAR2(300)  NOT NULL,
     phone                VARCHAR2(20)   NOT NULL,
     website_url          VARCHAR2(500)  NOT NULL,             -- 매장 웹사이트. http(s):// 로 시작 (서버 검사)
@@ -98,6 +123,7 @@ CREATE TABLE store (
     created_at           DATE           DEFAULT SYSDATE NOT NULL,
     CONSTRAINT store_pk           PRIMARY KEY (store_id),
     CONSTRAINT store_owner_fk     FOREIGN KEY (owner_id) REFERENCES member(member_id),
+    CONSTRAINT store_area_fk      FOREIGN KEY (area) REFERENCES area(name),     -- 목록에 없는 지역은 못 넣음
     CONSTRAINT store_biz_place_uk UNIQUE (biz_place_no),
     CONSTRAINT store_status_ck    CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
     CONSTRAINT store_file_ck      CHECK (owner_id IS NULL OR biz_place_file_path IS NOT NULL),
@@ -281,6 +307,8 @@ CREATE TABLE party_message (
 CREATE SEQUENCE sq_member;
 CREATE SEQUENCE sq_genre;
 CREATE SEQUENCE sq_store;
+CREATE SEQUENCE sq_region;
+CREATE SEQUENCE sq_area;
 CREATE SEQUENCE sq_theme;
 CREATE SEQUENCE sq_theme_genre;
 CREATE SEQUENCE sq_time_slot;

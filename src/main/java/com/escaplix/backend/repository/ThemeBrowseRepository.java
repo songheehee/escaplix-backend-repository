@@ -207,14 +207,6 @@ public class ThemeBrowseRepository {
 
     // ---------------------------------------------------------------- 매장
 
-    /** B-8 승인된 매장의 지역 (중복 없이) */
-    public List<String> findApprovedAreas() {
-        return em.createQuery(
-                        "select distinct s.area from Store s where s.status = :approved", String.class)
-                .setParameter("approved", StoreStatus.APPROVED)
-                .getResultList();
-    }
-
     /** B-9 승인된 매장 검색 (이름 순) */
     public List<Store> findApprovedStores(String area, String keywordLike) {
         StringBuilder jpql = new StringBuilder("select s from Store s where s.status = :approved");

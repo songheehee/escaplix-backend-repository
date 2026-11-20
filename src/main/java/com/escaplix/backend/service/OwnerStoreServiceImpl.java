@@ -31,6 +31,7 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
     private final StoreRepository storeRepository;
     private final ThemeRepository themeRepository;
     private final MemberRepository memberRepository;
+    private final AreaRepository areaRepository;
     private final FileStorage fileStorage;
     private final OwnerServiceSupport support;
 
@@ -51,6 +52,7 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
     @Override
     @Transactional
     public StoreSaveResponse createStore(LoginMember login, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto) {
+        validateArea(form);
         validateLatLng(form);
         if (storeRepository.existsByBizPlaceNo(form.bizPlaceNo())) {
             throw ApiException.conflict("이미 등록된 사업장 등록번호입니다.");
@@ -94,6 +96,7 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
     public StoreSaveResponse updateStore(LoginMember login, Long storeId, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto) {
         Store store = findStore(storeId);
         support.checkStoreAccess(login, store);
+        validateArea(form);
         validateLatLng(form);
         if (storeRepository.existsByBizPlaceNoAndStoreIdNot(form.bizPlaceNo(), storeId)) {
             throw ApiException.conflict("이미 등록된 사업장 등록번호입니다.");
@@ -171,6 +174,13 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
                 s.getStatus() == StoreStatus.REJECTED ? s.getRejectReason() : null,   // 결정 S4
                 themeRepository.countByStore_StoreId(s.getStoreId()),
                 s.getCreatedAt());
+    }
+
+    /** 지역은 AREA 표에 있는 세부 지역만 (결정 L1). 화면은 select 로 고르지만 서버도 다시 확인 */
+    private void validateArea(StoreForm form) {
+        if (!areaRepository.existsByName(form.area())) {
+            throw ApiException.badRequest("지역은 목록에서 골라 주세요.");
+        }
     }
 
     /** lat·lng 는 둘 다 있거나 둘 다 없음 */

@@ -52,9 +52,8 @@ public class ThemeBrowseRepository {
             params.put("people", people);
         }
         if (keywordLike != null) {
-            // 테마 이름 또는 매장 이름. 저장된 값의 띄어쓰기도 지우고 비교
-            jpql.append(" and (replace(t.title, ' ', '') like :kw escape '\\'" +
-                        " or replace(s.name, ' ', '') like :kw escape '\\')");
+            // 테마 이름만 (매장 이름은 B-9 매장 검색이 맡음). 저장된 값의 띄어쓰기도 지우고 비교
+            jpql.append(" and replace(t.title, ' ', '') like :kw escape '\\'");
             params.put("kw", keywordLike);
         }
         if (genreId != null) {

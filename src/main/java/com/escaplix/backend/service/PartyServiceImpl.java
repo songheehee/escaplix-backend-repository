@@ -56,7 +56,8 @@ public class PartyServiceImpl implements PartyService {
 
         Map<Long, Integer> counts = partyBrowseRepository.joinedCounts(now);
         Map<Long, List<String>> genres = partyBrowseRepository.genreNames(now);
-        Map<Long, PartyMemberStatus> mine = partyBrowseRepository.myStatuses(login.memberId());
+        // 비회원(login == null)이면 참여·강퇴 표시는 모두 false
+        Map<Long, PartyMemberStatus> mine = login == null ? Map.of() : partyBrowseRepository.myStatuses(login.memberId());
 
         return parties.stream().map(p -> {
             Theme t = p.getTheme();

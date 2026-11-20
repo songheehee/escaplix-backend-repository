@@ -21,9 +21,8 @@ public class PartyController {
 
     private final PartyService partyService;
 
-    /** A-12 파티 목록 (모집 중만) · 로그인 · 200 */
+    /** A-12 파티 목록 (모집 중만) · 공개 (비회원도 봄, 로그인이면 joined/kicked 표시) · 200 */
     @GetMapping("/api/parties")
-    @Auth
     public List<PartyListItem> findParties(LoginMember login, @ModelAttribute PartySearchCondition cond) {
         return partyService.findParties(login, cond);
     }

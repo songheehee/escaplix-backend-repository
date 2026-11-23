@@ -12,7 +12,7 @@ public record ThemeForm(
         String description,
         @NotNull(message = "난이도를 골라 주세요.") @Min(value = 1, message = "난이도는 1~5입니다.") @Max(value = 5, message = "난이도는 1~5입니다.")
         Integer difficulty,
-        @NotNull(message = "제한 시간을 입력해 주세요.") @Min(value = 1, message = "제한 시간은 1~300분입니다.") @Max(value = 300, message = "제한 시간은 1~300분입니다.")
+        @NotNull(message = "제한 시간을 입력해 주세요.") @Min(value = 1, message = "제한 시간은 1~720분입니다.") @Max(value = 720, message = "제한 시간은 1~720분입니다.")
         Integer playMinutes,
         @NotNull(message = "최소 인원을 입력해 주세요.") @Min(value = 1, message = "인원은 1~20명입니다.") @Max(value = 20, message = "인원은 1~20명입니다.")
         Integer minPeople,

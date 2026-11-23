@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -218,7 +217,8 @@ public class OwnerThemeServiceImpl implements OwnerThemeService {
 
     /**
      * C-11 검사 (메시지는 API.md C-11)
-     * HH:mm 형식 / 유형당 20개까지 / 같은 시각 두 번 금지 / 정렬했을 때 앞뒤 간격이 playMinutes 보다 짧으면 겹침
+     * HH:mm 형식 / 유형당 20개까지 / 같은 시각 두 번 금지.
+     * 회차가 겹치는 건 허용 (밀어내기 테마처럼 일부러 겹쳐 운영하는 경우가 있음, 11/23)
      */
     private List<LocalTime> validateSlots(String label, List<String> values, int playMinutes) {
         if (values.size() > MAX_SLOTS_PER_DAY_TYPE) {
@@ -237,10 +237,6 @@ public class OwnerThemeServiceImpl implements OwnerThemeService {
             LocalTime cur = times.get(i);
             if (prev.equals(cur)) {
                 throw ApiException.badRequest(label + " " + fmt(cur) + "이 두 번 들어 있습니다.");
-            }
-            if (ChronoUnit.MINUTES.between(prev, cur) < playMinutes) {
-                throw ApiException.badRequest(label + " " + fmt(prev) + "과 " + fmt(cur)
-                        + " 회차가 겹칩니다 (플레이 " + playMinutes + "분).");
             }
         }
         return times;

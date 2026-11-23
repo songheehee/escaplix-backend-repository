@@ -25,13 +25,10 @@ public class OwnerServiceSupport {
 
     /**
      * 사장: 내 매장이 아니면 403.
-     * 관리자: 직접 등록한 매장(owner 가 null)만. C-1 에서 관리자에게 보이는 매장과 같은 범위
+     * 관리자: 모든 매장 (매장 관리 개편 11/23. 사장 매장도 보고 고칠 수 있음, 고쳐도 승인 상태 그대로 = 결정 S3 확장)
      */
     public void checkStoreAccess(LoginMember login, Store store) {
         if (login.is(Role.ADMIN)) {
-            if (store.getOwner() != null) {
-                throw ApiException.forbidden("사장이 등록한 매장은 관리자가 관리할 수 없습니다.");
-            }
             return;
         }
         if (store.getOwner() == null || !store.getOwner().getMemberId().equals(login.memberId())) {

@@ -20,5 +20,7 @@ public record AdminStoreDetailResponse(
         OwnerBrief owner,
         StoreStatus status,
         String rejectReason,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        /** 처음 승인된 때 (관리자 직접 등록이면 등록한 때). 승인 전이면 null */
+        LocalDateTime approvedAt
 ) {}

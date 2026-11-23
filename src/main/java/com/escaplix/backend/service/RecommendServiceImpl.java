@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 /**
  * RecommendService 구현 (D 담당): 선호 장르(D-7, D-8), 맞춤 추천(D-9), 내 통계(D-10).
+ * 지역 표(AREA·REGION)는 B 의 AreaRepository·RegionRepository 를 읽기만 한다.
  * 공개 테마·장르·모집 파티 조회는 B 의 ThemeBrowseRepository 를 그대로 쓴다 (같은 "공개" 기준).
  */
 @Service
@@ -38,6 +39,8 @@ public class RecommendServiceImpl implements RecommendService {
     private final ThemeRepository themeRepository;
     private final ReviewRepository reviewRepository;
     private final ThemeBrowseRepository themeBrowseRepository;   // B 의 공개 테마 조회 (읽기만)
+    private final AreaRepository areaRepository;                 // 세부 지역 → 큰 지역 (D-10, 읽기만)
+    private final RegionRepository regionRepository;             // 큰 지역 목록 (D-10, 읽기만)
 
     // ======================================================== D-7, D-8 선호 장르
 
@@ -139,7 +142,7 @@ public class RecommendServiceImpl implements RecommendService {
             return toRecommendItems(top, genresByTheme, now, t -> "이번 주 인기 테마");
         }
 
-        // 6. 정렬: 겹치는 장르 수 많은 순 → 평균 별점 → 최신, 최대 5개
+        // 6. 정렬: 겹치는 장르 수 많은 순 → 평점순(평균 별점 → 후기 많은 순 → 최신), 최대 5개
         List<Theme> picked = matched.stream()
                 .sorted(Comparator.<Theme>comparingInt(t -> overlapByTheme.get(t.getThemeId()).size())
                         .reversed()
@@ -219,38 +222,85 @@ public class RecommendServiceImpl implements RecommendService {
 
     // ======================================================== D-10 내 통계
 
-    /** D-10 내 통계 (선택 기능). 내 후기 전부 기준 (숨김 포함) */
+    /** D-10 내 통계. 내 후기 전부 기준 (숨김 포함) */
     @Override
     public StatsResponse getStats(LoginMember login) {
         List<Review> reviews = reviewRepository
                 .findByMember_MemberIdOrderByPlayedDateDescReviewIdDesc(login.memberId());
 
-        // 1. 플레이 수, 탈출 수, 탈출률(% 반올림, 기록 없으면 0)
+        // 1. 플레이 수, 탈출 성공 수, 노힌트 탈출 수 (힌트 0개로 성공)
         int playCount = reviews.size();
         int escapeCount = (int) reviews.stream().filter(r -> Boolean.TRUE.equals(r.getEscaped())).count();
-        int escapeRate = (playCount == 0) ? 0 : (int) Math.round(escapeCount * 100.0 / playCount);
+        int noHintCount = (int) reviews.stream()
+                .filter(r -> Boolean.TRUE.equals(r.getEscaped()) && r.getHintCount() != null && r.getHintCount() == 0)
+                .count();
 
-        // 2. 장르별 횟수: 후기마다 그 테마의 장르를 하나씩 셈 (테마 장르는 한 번에 조회)
-        Map<Long, List<Genre>> genresByTheme = themeBrowseRepository.findGenresByThemeIds(
-                reviews.stream().map(r -> r.getTheme().getThemeId()).toList());
-        Map<Long, String> genreNames = new HashMap<>();
-        Map<Long, Integer> genreCounts = new HashMap<>();
-        for (Review r : reviews) {
-            for (Genre g : genresByTheme.getOrDefault(r.getTheme().getThemeId(), List.of())) {
-                genreNames.put(g.getGenreId(), g.getName());
-                genreCounts.merge(g.getGenreId(), 1, Integer::sum);
+        // 2. 평균 남은 시간: 탈출 성공한 판만 (실패는 남은 시간이 0 이라 빼고 계산)
+        //    초 평균은 반올림, 비율은 판마다 남은 시간 / 제한 시간 을 구해서 평균
+        List<Review> escapedReviews = reviews.stream()
+                .filter(r -> Boolean.TRUE.equals(r.getEscaped()))
+                .toList();
+        Integer avgRemainSeconds = null;
+        int avgRemainRate = 0;
+        if (!escapedReviews.isEmpty()) {
+            long remainSum = 0;
+            double rateSum = 0;
+            for (Review r : escapedReviews) {
+                int remain = nz(r.getRemainMinutes()) * 60 + nz(r.getRemainSeconds());
+                int limit = nz(r.getTheme().getPlayMinutes()) * 60;
+                remainSum += remain;
+                rateSum += (limit == 0) ? 0 : Math.min(1.0, (double) remain / limit);
             }
+            avgRemainSeconds = (int) Math.round((double) remainSum / escapedReviews.size());
+            avgRemainRate = (int) Math.round(rateSum * 100 / escapedReviews.size());
         }
 
-        // 3. 많은 순 (같으면 장르 번호 순), 1위가 topGenre. 기록이 없으면 topGenre 는 null, byGenre 는 []
-        List<StatsResponse.GenreCount> byGenre = genreCounts.entrySet().stream()
-                .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed()
-                        .thenComparing(Map.Entry.<Long, Integer>comparingByKey()))
-                .map(e -> new StatsResponse.GenreCount(genreNames.get(e.getKey()), e.getValue()))
-                .toList();
-        StatsResponse.GenreCount topGenre = byGenre.isEmpty() ? null : byGenre.get(0);
+        // 3. 전국 제패: 지금 공개된 테마를 큰 지역별로 묶고, 그중 내가 후기를 쓴(=플레이한) 테마를 센다
+        //    매장의 세부 지역 이름(store.area) → AREA → 큰 지역(REGION)
+        Set<Long> playedThemeIds = reviews.stream()
+                .map(r -> r.getTheme().getThemeId())
+                .collect(Collectors.toSet());
+        Map<String, Long> regionIdByArea = new HashMap<>();
+        for (Area a : areaRepository.findAllOrdered()) {
+            regionIdByArea.put(a.getName(), a.getRegion().getRegionId());
+        }
+        Map<Long, Integer> themeCountByRegion = new HashMap<>();
+        Map<Long, Integer> playedCountByRegion = new HashMap<>();
+        int themeCount = 0;
+        int conquerCount = 0;
+        for (Theme t : themeBrowseRepository.findPublicThemes(null, null, null, null, null, null)) {
+            boolean played = playedThemeIds.contains(t.getThemeId());
+            themeCount++;
+            if (played) conquerCount++;
+            Long regionId = regionIdByArea.get(t.getStore().getArea());
+            if (regionId == null) continue;   // 지역 표에 없는 매장 (DB FK 가 막지만 혹시 몰라서)
+            themeCountByRegion.merge(regionId, 1, Integer::sum);
+            if (played) playedCountByRegion.merge(regionId, 1, Integer::sum);
+        }
 
-        return new StatsResponse(playCount, escapeCount, escapeRate, topGenre, byGenre);
+        // 4. 큰 지역 8개 전부 화면 순서대로 (테마가 없는 지역도 0 / 0 으로)
+        List<StatsResponse.RegionStat> byRegion = regionRepository.findAll().stream()
+                .sorted(Comparator.comparing(Region::getSortOrder).thenComparing(Region::getRegionId))
+                .map(rg -> {
+                    int played = playedCountByRegion.getOrDefault(rg.getRegionId(), 0);
+                    int total = themeCountByRegion.getOrDefault(rg.getRegionId(), 0);
+                    return new StatsResponse.RegionStat(rg.getRegionId(), rg.getName(), played, total, percent(played, total));
+                })
+                .toList();
+
+        return new StatsResponse(
+                playCount, escapeCount, percent(escapeCount, playCount),
+                noHintCount, percent(noHintCount, playCount),
+                avgRemainSeconds, avgRemainRate,
+                conquerCount, themeCount, percent(conquerCount, themeCount),
+                byRegion);
+    }
+
+    private static int nz(Integer n) { return n == null ? 0 : n; }
+
+    /** part / whole 을 % 로 반올림. whole 이 0 이면 0 */
+    private static int percent(int part, int whole) {
+        return (whole == 0) ? 0 : (int) Math.round(part * 100.0 / whole);
     }
 
     // ======================================================== 공용 도우미

@@ -265,6 +265,8 @@ public class ReviewServiceImpl implements ReviewService {
                 theme.getThemeId(),
                 theme.getTitle(),
                 theme.getStore().getName(),   // 매장 이름: 후기 → 테마 → 매장
+                theme.getStore().getArea(),   // 매장 세부 지역 (홍대 / 강남 ...)
+                theme.getPosterUrl(),
                 theme.getPlayMinutes(),       // 화면 "12:34 남기고 (70:00 중)" 표시용
                 r.getRating(),
                 r.getEscaped(),

@@ -226,9 +226,22 @@ class PartyFlowTests {
         // 안내 줄: 방장 JOIN + a JOIN + b JOIN
         assertThat(partyMessageRepository.findTop50ByParty_PartyIdOrderByMessageIdDesc(partyId))
                 .extracting(PartyMessage::getMsgType).containsOnly(MessageType.JOIN).hasSize(3);
-        // FULL 은 목록에서 빠짐
+        // 정원 마감(FULL)도 목록에 남는다 (모집 마감 전까지는 다 보임). 참여자는 joined 로 보임
+        String path = "$[?(@.partyId == " + partyId + ")]";
         mvc.perform(get("/api/parties").param("themeId", String.valueOf(theme.getThemeId())).header("Authorization", a))
-                .andExpect(jsonPath("$[?(@.partyId == " + partyId + ")]").isEmpty());
+                .andExpect(jsonPath(path + ".status").value(org.hamcrest.Matchers.contains("FULL")))
+                .andExpect(jsonPath(path + ".joined").value(org.hamcrest.Matchers.contains(true)));
+
+        // 정원이 찬 파티는 모집 기한이 지나도 플레이 시간 전까지 보이고, 플레이 시간이 지나면 빠진다
+        Party p = partyRepository.findById(partyId).orElseThrow();
+        p.setDeadlineAt(LocalDateTime.now().minusMinutes(1));
+        partyRepository.save(p);
+        mvc.perform(get("/api/parties").param("themeId", String.valueOf(theme.getThemeId())).header("Authorization", a))
+                .andExpect(jsonPath(path).isNotEmpty());
+        p.setPlayAt(LocalDateTime.now().minusMinutes(1));
+        partyRepository.save(p);
+        mvc.perform(get("/api/parties").param("themeId", String.valueOf(theme.getThemeId())).header("Authorization", a))
+                .andExpect(jsonPath(path).isEmpty());
     }
 
     @Test

@@ -245,7 +245,7 @@ public class PartyServiceImpl implements PartyService {
         Party party = chatRoom(login, partyId);   // CLOSED 파티도 채팅 가능 (일정 조율용)
         // 끝난 파티(플레이 시간이 지남)는 읽기 전용: 기록은 볼 수 있고 새 메시지는 못 보냄 (내 채팅의 ended 와 같은 기준)
         if (!party.getPlayAt().isAfter(LocalDateTime.now())) {
-            throw ApiException.conflict("끝난 파티에는 메시지를 보낼 수 없습니다.");
+            throw ApiException.conflict("종료된 파티에는 메시지를 보낼 수 없습니다.");
         }
 
         String content = req.content() == null ? "" : req.content().strip();

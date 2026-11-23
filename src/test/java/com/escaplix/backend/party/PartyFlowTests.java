@@ -434,7 +434,7 @@ class PartyFlowTests {
         partyRepository.save(p);
 
         say(leader, partyId, "재밌었어요").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("끝난 파티에는 메시지를 보낼 수 없습니다."));
+                .andExpect(jsonPath("$.message").value("종료된 파티에는 메시지를 보낼 수 없습니다."));
         // 지난 메시지는 그대로 읽힌다
         mvc.perform(get("/api/parties/" + partyId + "/messages").header("Authorization", leader))
                 .andExpect(status().isOk())

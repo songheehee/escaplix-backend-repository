@@ -32,10 +32,13 @@ public class PartyBrowseRepository {
      * 목록 파티 (모집 중 + 정원 마감). 가까운 일정순
      * @param keywordLike 띄어쓰기를 지운 테마 이름 LIKE 패턴 (ThemeBrowseRepository.likePattern 으로 만든다). null 이면 조건 없음
      * @param genreIds    하나라도 맞으면. null·빈 목록이면 조건 없음
+     * @param area        매장 세부 지역 이름. null 이면 조건 없음
+     * @param region      큰 지역 이름 (그 안의 세부 지역 전부). area 가 있으면 무시
      */
-    public List<Party> findRecruiting(LocalDateTime now, String keywordLike, Collection<Long> genreIds, Long themeId) {
+    public List<Party> findRecruiting(LocalDateTime now, String keywordLike, Collection<Long> genreIds, Long themeId,
+                                      String area, String region) {
         StringBuilder jpql = new StringBuilder(
-                "select p from Party p join fetch p.theme t join fetch t.store join fetch p.leader where " + VISIBLE);
+                "select p from Party p join fetch p.theme t join fetch t.store s join fetch p.leader where " + VISIBLE);
         Map<String, Object> params = new HashMap<>();
         params.put("recruiting", PartyStatus.RECRUITING);
         params.put("full", PartyStatus.FULL);
@@ -44,6 +47,14 @@ public class PartyBrowseRepository {
         if (themeId != null) {
             jpql.append(" and t.themeId = :themeId");
             params.put("themeId", themeId);
+        }
+        if (area != null) {
+            jpql.append(" and s.area = :area");
+            params.put("area", area);
+        } else if (region != null) {
+            // 큰 지역: 그 지역에 묶인 세부 지역 매장 전부 (테마 검색 B-1 과 같은 방식)
+            jpql.append(" and s.area in (select a.name from Area a where a.region.name = :region)");
+            params.put("region", region);
         }
         if (keywordLike != null) {
             jpql.append(" and replace(t.title, ' ', '') like :kw escape '\\'");

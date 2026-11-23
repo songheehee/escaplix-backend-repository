@@ -51,7 +51,8 @@ public class PartyServiceImpl implements PartyService {
     public List<PartyListItem> findParties(LoginMember login, PartySearchCondition cond) {
         LocalDateTime now = LocalDateTime.now();
         List<Party> parties = partyBrowseRepository.findRecruiting(now,
-                ThemeBrowseRepository.likePattern(cond.keyword()), cond.genreIds(), cond.themeId());
+                ThemeBrowseRepository.likePattern(cond.keyword()), cond.genreIds(), cond.themeId(),
+                trimToNull(cond.area()), trimToNull(cond.region()));
         if (parties.isEmpty()) return List.of();
 
         Map<Long, Integer> counts = partyBrowseRepository.joinedCounts(now);
@@ -363,6 +364,10 @@ public class PartyServiceImpl implements PartyService {
         m.setMember(target);
         m.setMsgType(type);
         partyMessageRepository.save(m);
+    }
+
+    private static String trimToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
     }
 
     /**

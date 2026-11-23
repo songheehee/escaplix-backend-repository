@@ -44,6 +44,8 @@ class PartyFlowTests {
     @Autowired GenreRepository genreRepository;
     @Autowired ThemeGenreRepository themeGenreRepository;
     @Autowired PartyRepository partyRepository;
+    @Autowired RegionRepository regionRepository;
+    @Autowired AreaRepository areaRepository;
     @Autowired com.escaplix.backend.scheduler.PartyDeadlineScheduler deadlineScheduler;
     @Autowired PartyMemberRepository partyMemberRepository;
     @Autowired PartyMessageRepository partyMessageRepository;
@@ -200,6 +202,32 @@ class PartyFlowTests {
         p.setDeadlineAt(LocalDateTime.now().minusMinutes(1));
         partyRepository.save(p);
         mvc.perform(get("/api/parties").header("Authorization", bearer(viewer)))
+                .andExpect(jsonPath(path).isEmpty());
+    }
+
+    @Test
+    void A12_지역으로_거른다_세부_지역_또는_큰_지역() throws Exception {
+        // 이 테스트만의 지역: 큰 지역(R) 안에 세부 지역(A), 다른 큰 지역(R2) 안에 세부 지역(B)
+        Region r = new Region(); r.setName("큰" + tag); r.setSortOrder(1); regionRepository.save(r);
+        Region r2 = new Region(); r2.setName("딴" + tag); r2.setSortOrder(2); regionRepository.save(r2);
+        Area a = new Area(); a.setRegion(r); a.setName("동네" + tag); a.setSortOrder(1); areaRepository.save(a);
+        Area b = new Area(); b.setRegion(r2); b.setName("옆동네" + tag); b.setSortOrder(1); areaRepository.save(b);
+        Store store = theme.getStore();
+        store.setArea(a.getName());
+        storeRepository.save(store);
+
+        long partyId = create(bearer(saveUser("leader")), 4);
+        String path = "$[?(@.partyId == " + partyId + ")]";
+
+        mvc.perform(get("/api/parties").param("area", a.getName())).andExpect(jsonPath(path).isNotEmpty());
+        mvc.perform(get("/api/parties").param("area", b.getName())).andExpect(jsonPath(path).isEmpty());
+        mvc.perform(get("/api/parties").param("region", r.getName())).andExpect(jsonPath(path).isNotEmpty());
+        mvc.perform(get("/api/parties").param("region", r2.getName())).andExpect(jsonPath(path).isEmpty());
+        // 둘 다 오면 세부 지역이 우선
+        mvc.perform(get("/api/parties").param("area", a.getName()).param("region", r2.getName()))
+                .andExpect(jsonPath(path).isNotEmpty());
+        // 다른 조건과 같이: 장르가 안 맞으면 빠짐
+        mvc.perform(get("/api/parties").param("region", r.getName()).param("genreIds", "999999"))
                 .andExpect(jsonPath(path).isEmpty());
     }
 

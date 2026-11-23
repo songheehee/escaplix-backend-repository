@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * D · 후기·신고 (D-1 ~ D-4, D-11)
+ * D · 후기 (D-1 ~ D-4)
  * 컨트롤러는 받고 넘기기만 한다: 검사·권한 확인·트랜잭션은 서비스에서. 응답은 DTO 만 (엔티티 금지).
  */
 @RestController
@@ -48,11 +48,4 @@ public class ReviewController {
         return reviewService.getThemeReviews(login, themeId);
     }
 
-    /** D-11 후기 신고 · USER·OWNER · 201 */
-    @PostMapping("/api/reviews/{reviewId}/report")
-    @ResponseStatus(HttpStatus.CREATED)
-    @Auth({Role.USER, Role.OWNER})
-    public ReportIdResponse report(LoginMember login, @PathVariable Long reviewId, @Valid @RequestBody ReportRequest req) {
-        return reviewService.report(login, reviewId, req);
-    }
 }

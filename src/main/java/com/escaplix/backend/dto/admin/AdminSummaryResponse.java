@@ -12,6 +12,5 @@ public record AdminSummaryResponse(
         LocalDateTime oldestPendingThemeAt,
         long approvedStores,
         long openThemes,
-        long waitReports,
         Map<Role, Long> memberCountByRole
 ) {}

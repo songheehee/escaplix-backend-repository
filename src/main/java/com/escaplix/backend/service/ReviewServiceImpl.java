@@ -33,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReviewServiceImpl implements ReviewService {
 
     private final ReviewRepository reviewRepository;
-    private final ReportRepository reportRepository;
     private final ThemeRepository themeRepository;
     private final MemberRepository memberRepository;
     private final PartyMemberRepository partyMemberRepository;
@@ -105,18 +104,14 @@ public class ReviewServiceImpl implements ReviewService {
         return toMyReviewItem(r);
     }
 
-    /** D-3 후기 삭제. 신고 먼저 지우고 후기 삭제 (FK) */
+    /** D-3 후기 삭제 */
     @Override
     @Transactional
     public void deleteReview(LoginMember login, Long reviewId) {
         // 1. 내 후기인지 확인
         Review r = findMyReview(login, reviewId, "삭제");
 
-        // 2. 이 후기를 가리키는 신고 먼저 지우기
-        reportRepository.deleteByReview_ReviewId(reviewId);
-        reportRepository.flush();
-
-        // 3. 후기 지우기 (VISIBLE 이었다면 트리거가 THEME 집계에서 뺌)
+        // 2. 후기 지우기 (VISIBLE 이었다면 트리거가 THEME 집계에서 뺌)
         reviewRepository.delete(r);
     }
 
@@ -152,47 +147,11 @@ public class ReviewServiceImpl implements ReviewService {
                         r.getPlayedDate(),
                         r.getContent(),
                         r.getCreatedAt(),
-                        myId != null && r.getMember().getMemberId().equals(myId),              // mine
-                        myId != null && reportRepository
-                                .existsByReview_ReviewIdAndReporter_MemberId(r.getReviewId(), myId)  // reportedByMe
+                        myId != null && r.getMember().getMemberId().equals(myId)               // mine
                 ))
                 .toList();
 
         return new ThemeReviewsResponse(avg, count, theme.getPlayMinutes(), items);
-    }
-
-    /** D-11 후기 신고 (USER·OWNER). 접수만 함 (status 는 DB 기본값 WAIT) */
-    @Override
-    @Transactional
-    public ReportIdResponse report(LoginMember login, Long reviewId, ReportRequest req) {
-        Long myId = login.memberId();
-
-        // 1. 신고할 후기 찾기. 없거나 숨긴 후기면 404 (숨긴 후기는 이미 안 보이니 없는 것처럼)
-        Review review = reviewRepository.findById(reviewId)
-                .filter(r -> r.getStatus() == ReviewStatus.VISIBLE)
-                .orElseThrow(() -> ApiException.notFound("없는 후기입니다."));
-
-        // 2. 내 후기는 신고 못 함
-        if (review.getMember().getMemberId().equals(myId)) {
-            throw ApiException.badRequest("내 후기는 신고할 수 없습니다.");
-        }
-
-        // 3. 한 후기에 한 사람은 한 번만
-        if (reportRepository.existsByReview_ReviewIdAndReporter_MemberId(reviewId, myId)) {
-            throw ApiException.conflict("이미 신고한 후기입니다.");
-        }
-
-        // 4. 신고 저장. 버튼을 두 번 눌러 동시에 들어와도 UNIQUE(review_id, reporter_id) 가 막아 줌 → 409
-        Report report = new Report();
-        report.setReview(review);
-        report.setReporter(memberRepository.getReferenceById(myId));
-        report.setReason(req.reason().strip());
-        try {
-            reportRepository.saveAndFlush(report);
-        } catch (DataIntegrityViolationException e) {
-            throw ApiException.conflict("이미 신고한 후기입니다.");
-        }
-        return new ReportIdResponse(report.getReportId());
     }
 
     /** D-5 내 기록. 플레이한 날 최신순, 숨김 후기도 status 와 함께 */

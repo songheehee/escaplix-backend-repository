@@ -189,8 +189,10 @@ class PartyFlowTests {
                 .andExpect(jsonPath(path).isNotEmpty());
         mvc.perform(get("/api/parties").param("genreIds", "999999").header("Authorization", bearer(viewer)))
                 .andExpect(jsonPath(path).isEmpty());
-        // 로그인 안 하면 401
-        mvc.perform(get("/api/parties")).andExpect(status().isUnauthorized());
+        // 로그인 안 해도 목록은 보임 (참여·강퇴 표시는 false)
+        mvc.perform(get("/api/parties")).andExpect(status().isOk())
+                .andExpect(jsonPath(path).isNotEmpty())
+                .andExpect(jsonPath(path + ".joined").value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(false))));
 
         // 기한 지난 파티는 안 보임 (스케줄러가 아직 안 돌았어도)
         Party p = partyRepository.findById(partyId).orElseThrow();

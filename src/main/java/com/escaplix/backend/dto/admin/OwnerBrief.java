@@ -6,5 +6,7 @@ public record OwnerBrief(
         Long memberId,
         String loginId,
         String nickname,
-        String bizNo
+        String bizNo,
+        /** 가입일 (상세 C-14 서류 칸에서만. 목록에서는 null) */
+        java.time.LocalDateTime joinedAt
 ) {}

@@ -10,6 +10,8 @@ public record AdminThemeDetailResponse(
 ) {
 
     public record StoreInfo(Long storeId, String name, String bizPlaceNo, String phone, String websiteUrl,
-                            StoreStatus status) {
+                            StoreStatus status, String area, String address, String hours,
+                            /** 매장 사장 아이디. 관리자 직접 등록 매장이면 null */
+                            String ownerLoginId) {
     }
 }

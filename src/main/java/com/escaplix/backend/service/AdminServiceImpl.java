@@ -80,7 +80,8 @@ public class AdminServiceImpl implements AdminService {
                 ownerBrief(s.getOwner(), true),
                 s.getStatus(),
                 s.getRejectReason(),
-                s.getCreatedAt());
+                s.getCreatedAt(),
+                s.getApprovedAt());
     }
 
     @Override
@@ -134,7 +135,8 @@ public class AdminServiceImpl implements AdminService {
         return new AdminThemeDetailResponse(
                 support.toThemeDetail(t),
                 new AdminThemeDetailResponse.StoreInfo(s.getStoreId(), s.getName(), s.getBizPlaceNo(),
-                        s.getPhone(), s.getWebsiteUrl(), s.getStatus()));
+                        s.getPhone(), s.getWebsiteUrl(), s.getStatus(), s.getArea(), s.getAddress(), s.getHours(),
+                        s.getOwner() == null ? null : s.getOwner().getLoginId()));
     }
 
     @Override
@@ -181,6 +183,7 @@ public class AdminServiceImpl implements AdminService {
     private OwnerBrief ownerBrief(Member owner, boolean withBizNo) {
         if (owner == null) return null;
         return new OwnerBrief(owner.getMemberId(), owner.getLoginId(), owner.getNickname(),
-                withBizNo ? owner.getBizNo() : null);
+                withBizNo ? owner.getBizNo() : null,
+                withBizNo ? owner.getCreatedAt() : null);
     }
 }

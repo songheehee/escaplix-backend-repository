@@ -157,10 +157,10 @@ class OwnerAdminFlowTests {
                 .andReturn();
         long themeId = idOf(themeCreated, "$.themeId");
 
-        // C-11 시간표 검사 → 저장 → 다시 저장(통째 교체)
+        // C-11 시간표 검사 → 저장 → 다시 저장(통째 교체). 회차가 겹치는 건 허용 (밀어내기 테마)
         mvc.perform(json(put("/api/owner/themes/" + themeId + "/slots"), "{\"weekday\":[\"13:00\",\"13:30\"],\"weekend\":[]}").header("Authorization", owner1))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("주중 13:00과 13:30 회차가 겹칩니다 (플레이 70분)."));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.weekday.length()").value(2));
         mvc.perform(json(put("/api/owner/themes/" + themeId + "/slots"), "{\"weekday\":[\"15:00\",\"15:00\"],\"weekend\":[]}").header("Authorization", owner1))
                 .andExpect(jsonPath("$.message").value("주중 15:00이 두 번 들어 있습니다."));
         mvc.perform(json(put("/api/owner/themes/" + themeId + "/slots"), "{\"weekday\":[\"9:00\"],\"weekend\":[]}").header("Authorization", owner1))
@@ -209,12 +209,17 @@ class OwnerAdminFlowTests {
         mvc.perform(get("/api/owner/themes/" + themeId).header("Authorization", owner1))
                 .andExpect(jsonPath("$.genreIds.length()").value(1));
 
-        // 관리자 직접 등록: 파일 없이 바로 APPROVED, 사장 매장은 관리자가 수정 못 함
+        // 관리자 직접 등록: 파일 없이 바로 APPROVED
         mvc.perform(storeForm(multipart("/api/owner/stores"), "987-65-" + tag).header("Authorization", admin))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
+        // 매장 관리: 관리자는 사장 매장도 고칠 수 있고, 고쳐도 상태 그대로 (결정 S3 확장)
         mvc.perform(storeForm(multipart(HttpMethod.PUT, "/api/owner/stores/" + storeId), bizPlaceNo).header("Authorization", admin))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APPROVED"));
+        // C-1 관리자: 승인된 매장 전체 (사장 매장 포함, 사장 아이디와 함께)
+        mvc.perform(get("/api/owner/stores").header("Authorization", admin))
+                .andExpect(jsonPath("$[?(@.storeId == " + storeId + ")].ownerLoginId").value(hasItem("own1" + tag)));
 
         // C-12 요약
         mvc.perform(get("/api/admin/summary").header("Authorization", admin))

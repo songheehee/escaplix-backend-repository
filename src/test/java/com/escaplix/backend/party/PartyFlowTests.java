@@ -421,6 +421,25 @@ class PartyFlowTests {
     }
 
     @Test
+    void A21_끝난_파티는_읽기_전용_보내면_409_기록은_그대로() throws Exception {
+        String leader = bearer(saveUser("leader"));
+        long partyId = create(leader, 4);
+        say(leader, partyId, "당일에 봬요").andExpect(status().isCreated());
+
+        Party p = partyRepository.findById(partyId).orElseThrow();
+        p.setDeadlineAt(LocalDateTime.now().minusHours(2));
+        p.setPlayAt(LocalDateTime.now().minusMinutes(1));
+        partyRepository.save(p);
+
+        say(leader, partyId, "재밌었어요").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("끝난 파티에는 메시지를 보낼 수 없습니다."));
+        // 지난 메시지는 그대로 읽힌다
+        mvc.perform(get("/api/parties/" + partyId + "/messages").header("Authorization", leader))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.content == '당일에 봬요')]").exists());
+    }
+
+    @Test
     void A21_참여_안_했거나_강퇴되면_403_삭제된_파티는_404() throws Exception {
         String leader = bearer(saveUser("leader"));
         long partyId = create(leader, 4);

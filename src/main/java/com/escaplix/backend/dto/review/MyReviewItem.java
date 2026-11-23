@@ -9,6 +9,8 @@ public record MyReviewItem(
         Long themeId,
         String themeTitle,
         String storeName,
+        String area,
+        String posterUrl,
         int playMinutes,
         int rating,
         boolean escaped,

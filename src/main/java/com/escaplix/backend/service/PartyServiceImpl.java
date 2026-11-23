@@ -67,7 +67,7 @@ public class PartyServiceImpl implements PartyService {
                     genres.getOrDefault(t.getThemeId(), List.of()),
                     p.getPlayAt(), p.getDeadlineAt(),
                     counts.getOrDefault(p.getPartyId(), 0), p.getMaxPeople(),
-                    p.getLeader().getNickname(), p.getStatus(),
+                    p.getLeader().getNickname(), shownStatus(p, now),
                     my == PartyMemberStatus.JOINED, my == PartyMemberStatus.KICKED);
         }).toList();
     }
@@ -89,7 +89,7 @@ public class PartyServiceImpl implements PartyService {
                 .toList();
 
         Theme t = party.getTheme();
-        return new PartyDetailResponse(party.getPartyId(), party.getTitle(), party.getIntro(), party.getStatus(),
+        return new PartyDetailResponse(party.getPartyId(), party.getTitle(), party.getIntro(), shownStatus(party, LocalDateTime.now()),
                 new PartyDetailResponse.ThemeBrief(t.getThemeId(), t.getTitle(), t.getStore().getName(), t.getPlayMinutes()),
                 party.getPlayAt(), party.getDeadlineAt(), party.getMaxPeople(), members.size(), members,
                 leaderId.equals(login.memberId()) ? PartyRole.LEADER : PartyRole.MEMBER);
@@ -288,7 +288,7 @@ public class PartyServiceImpl implements PartyService {
             MyPartyItem.LastMessage lastMessage = last == null ? null
                     : new MyPartyItem.LastMessage(last.getMember().getNickname(), last.getMsgType(), last.getContent(), last.getCreatedAt());
             return new MyPartyItem(p.getPartyId(), p.getTitle(), p.getTheme().getThemeId(), p.getTheme().getTitle(),
-                    p.getStatus(), p.getLeader().getMemberId().equals(me) ? PartyRole.LEADER : PartyRole.MEMBER,
+                    shownStatus(p, now), p.getLeader().getMemberId().equals(me) ? PartyRole.LEADER : PartyRole.MEMBER,
                     counts.getOrDefault(p.getPartyId(), 0), p.getMaxPeople(), p.getPlayAt(),
                     p.getPlayAt().isBefore(now),   // ended: 끝난 파티 → 후기 쓰기 버튼
                     lastMessage);
@@ -363,6 +363,18 @@ public class PartyServiceImpl implements PartyService {
         m.setMember(target);
         m.setMsgType(type);
         partyMessageRepository.save(m);
+    }
+
+    /**
+     * 화면에 보낼 상태: 모집 기한이 지난 모집 중·정원 마감 파티는 모집 마감(CLOSED)
+     * DB 는 스케줄러(하루 한 번)가 바꾸므로 그 전에도 화면이 맞게
+     */
+    static PartyStatus shownStatus(Party p, LocalDateTime now) {
+        PartyStatus s = p.getStatus();
+        if ((s == PartyStatus.RECRUITING || s == PartyStatus.FULL) && !p.getDeadlineAt().isAfter(now)) {
+            return PartyStatus.CLOSED;
+        }
+        return s;
     }
 
     /** 나가기·강퇴로 자리가 났을 때: FULL 이었고 기한 전이면 다시 RECRUITING */

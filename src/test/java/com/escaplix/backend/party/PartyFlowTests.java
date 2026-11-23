@@ -44,6 +44,7 @@ class PartyFlowTests {
     @Autowired GenreRepository genreRepository;
     @Autowired ThemeGenreRepository themeGenreRepository;
     @Autowired PartyRepository partyRepository;
+    @Autowired com.escaplix.backend.scheduler.PartyDeadlineScheduler deadlineScheduler;
     @Autowired PartyMemberRepository partyMemberRepository;
     @Autowired PartyMessageRepository partyMessageRepository;
 
@@ -232,16 +233,20 @@ class PartyFlowTests {
                 .andExpect(jsonPath(path + ".status").value(org.hamcrest.Matchers.contains("FULL")))
                 .andExpect(jsonPath(path + ".joined").value(org.hamcrest.Matchers.contains(true)));
 
-        // 정원이 찬 파티는 모집 기한이 지나도 플레이 시간 전까지 보이고, 플레이 시간이 지나면 빠진다
+        // 정원이 차도 모집 기한이 지나면 모집 마감: 목록에서 빠지고, 방·내 채팅에는 CLOSED 로 (스케줄러 전에도)
         Party p = partyRepository.findById(partyId).orElseThrow();
         p.setDeadlineAt(LocalDateTime.now().minusMinutes(1));
         partyRepository.save(p);
         mvc.perform(get("/api/parties").param("themeId", String.valueOf(theme.getThemeId())).header("Authorization", a))
-                .andExpect(jsonPath(path).isNotEmpty());
-        p.setPlayAt(LocalDateTime.now().minusMinutes(1));
-        partyRepository.save(p);
-        mvc.perform(get("/api/parties").param("themeId", String.valueOf(theme.getThemeId())).header("Authorization", a))
                 .andExpect(jsonPath(path).isEmpty());
+        mvc.perform(get("/api/parties/" + partyId).header("Authorization", a))
+                .andExpect(jsonPath("$.status").value("CLOSED"));
+        mvc.perform(get("/api/my/parties").header("Authorization", a))
+                .andExpect(jsonPath(path + ".status").value(org.hamcrest.Matchers.contains("CLOSED")));
+        // 스케줄러는 DB 도 CLOSED 로
+        assertThat(partyRepository.findById(partyId).orElseThrow().getStatus()).isEqualTo(PartyStatus.FULL);
+        deadlineScheduler.closeExpired();
+        assertThat(partyRepository.findById(partyId).orElseThrow().getStatus()).isEqualTo(PartyStatus.CLOSED);
     }
 
     @Test

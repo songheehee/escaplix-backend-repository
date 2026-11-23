@@ -18,12 +18,12 @@ import java.util.*;
 public class PartyBrowseRepository {
 
     /**
-     * 목록에 보이는 파티 조건 (아래 쿼리들이 같이 씀). p = Party. 모집 마감(CLOSED)·삭제 전 파티는 다 보인다
-     *   모집 중(RECRUITING): 모집 기한 전까지 (기한이 지나면 스케줄러가 CLOSED 로 바꿈)
-     *   정원 마감(FULL): 플레이 시간 전까지 (정원이 찬 파티는 기한이 지나도 CLOSED 로 안 바뀜)
+     * 목록에 보이는 파티 조건 (아래 쿼리들이 같이 씀). p = Party
+     *   모집 중(RECRUITING)·정원 마감(FULL) 이고 모집 기한 전. 기한이 지나면 둘 다 모집 마감(CLOSED)으로 보고 뺀다
+     *   (스케줄러가 CLOSED 로 바꾸기 전이어도 바로 빠지게 기한으로 거름)
      */
     private static final String VISIBLE =
-            "((p.status = :recruiting and p.deadlineAt > :now) or (p.status = :full and p.playAt > :now))";
+            "(p.status = :recruiting or p.status = :full) and p.deadlineAt > :now";
 
     @PersistenceContext
     private EntityManager em;

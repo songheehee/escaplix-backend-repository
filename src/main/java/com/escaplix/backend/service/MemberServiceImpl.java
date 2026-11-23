@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 public class MemberServiceImpl implements MemberService {
 
     private final MemberRepository memberRepository;
+    private final StoreRepository storeRepository;
     private final MemberGenreRepository memberGenreRepository;
     private final GenreRepository genreRepository;
     private final PasswordEncoder passwordEncoder;
@@ -218,12 +219,19 @@ public class MemberServiceImpl implements MemberService {
         for (Object[] r : memberRepository.countStoresByOwner()) {
             storeCounts.put((Long) r[0], ((Number) r[1]).longValue());
         }
+        // 사장의 매장 목록도 한 번에 (회원 관리 "매장 N곳" 펼치기)
+        Map<Long, List<AdminMemberItem.StoreBrief>> storesByOwner = new HashMap<>();
+        for (Store s : storeRepository.findByOwnerIsNotNullOrderByCreatedAtAsc()) {
+            storesByOwner.computeIfAbsent(s.getOwner().getMemberId(), k -> new java.util.ArrayList<>())
+                    .add(new AdminMemberItem.StoreBrief(s.getStoreId(), s.getName(), s.getStatus()));
+        }
         List<AdminMemberItem> items = members.stream().map(m -> {
             boolean owner = m.getRole() == Role.OWNER;
             return new AdminMemberItem(m.getMemberId(), m.getLoginId(), m.getNickname(), m.getRole(),
                     owner ? m.getBizNo() : null,
                     owner ? storeCounts.getOrDefault(m.getMemberId(), 0L) : null,
-                    m.getCreatedAt());
+                    m.getCreatedAt(),
+                    owner ? storesByOwner.getOrDefault(m.getMemberId(), List.of()) : null);
         }).toList();
 
         // 역할 탭 숫자: 검색 조건과 상관없이 전체. 회원이 없는 역할도 0 으로

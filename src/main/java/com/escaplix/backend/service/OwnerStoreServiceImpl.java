@@ -6,10 +6,10 @@ import com.escaplix.backend.dto.owner.*;
 import com.escaplix.backend.entity.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.escaplix.backend.common.file.FileStorage;
+import com.escaplix.backend.common.geo.KakaoGeocoder;
 import com.escaplix.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,12 +35,13 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
     private final AreaRepository areaRepository;
     private final FileStorage fileStorage;
     private final OwnerServiceSupport support;
+    private final KakaoGeocoder geocoder;
 
     @Override
     public List<OwnerStoreItem> getMyStores(LoginMember login) {
-        // 사장: owner = 나, 관리자: owner IS NULL (직접 등록한 매장)
+        // 사장: owner = 나, 관리자: 승인된 매장 전체 (매장 관리. 대기·반려는 승인 요청 화면에서)
         List<Store> stores = login.is(Role.ADMIN)
-                ? storeRepository.findByOwnerIsNullOrderByCreatedAtDesc()
+                ? storeRepository.findByStatusOrderByCreatedAtDesc(StoreStatus.APPROVED)
                 : storeRepository.findByOwner_MemberIdOrderByCreatedAtDesc(login.memberId());
         return stores.stream().map(this::toItem).toList();
     }
@@ -54,7 +55,6 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
     @Transactional
     public StoreSaveResponse createStore(LoginMember login, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto) {
         validateArea(form);
-        validateLatLng(form);
         if (storeRepository.existsByBizPlaceNo(form.bizPlaceNo())) {
             throw ApiException.conflict("이미 등록된 사업장 등록번호입니다.");
         }
@@ -66,6 +66,7 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
 
         Store store = new Store();
         applyForm(store, form);
+        fillLatLng(store);
         if (admin) {
             // 관리자 직접 등록: 바로 공개 (결정 S3)
             store.setOwner(null);
@@ -99,14 +100,18 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
         Store store = findStore(storeId);
         support.checkStoreAccess(login, store);
         validateArea(form);
-        validateLatLng(form);
         if (storeRepository.existsByBizPlaceNoAndStoreIdNot(form.bizPlaceNo(), storeId)) {
             throw ApiException.conflict("이미 등록된 사업장 등록번호입니다.");
         }
 
+        String oldAddress = store.getAddress();
         applyForm(store, form);
+        if (!form.address().equals(oldAddress) || store.getLat() == null) {
+            fillLatLng(store);   // 주소가 바뀌었거나 좌표가 없을 때만 다시 찾음
+        }
         if (!login.is(Role.ADMIN)) {
-            // 사장이 수정하면 어떤 칸이든 다시 승인 대기 (결정 S1). 관리자는 APPROVED 유지 (결정 S3)
+            // 사장이 수정하면 어떤 칸이든 다시 승인 대기 (결정 S1).
+            // 관리자는 사장 매장이든 직접 등록 매장이든 지금 상태 그대로 (결정 S3, 매장 관리 개편으로 사장 매장까지)
             store.setStatus(StoreStatus.PENDING);
             store.setRejectReason(null);
         }
@@ -175,7 +180,10 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
                 s.getStatus(),
                 s.getStatus() == StoreStatus.REJECTED ? s.getRejectReason() : null,   // 결정 S4
                 themeRepository.countByStore_StoreId(s.getStoreId()),
-                s.getCreatedAt());
+                s.getCreatedAt(),
+                s.getApprovedAt(),
+                s.getOwner() == null ? null : s.getOwner().getLoginId(),
+                s.getOwner() == null ? null : s.getOwner().getNickname());
     }
 
     /** 지역은 AREA 표에 있는 세부 지역만 (결정 L1). 화면은 select 로 고르지만 서버도 다시 확인 */
@@ -185,17 +193,11 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
         }
     }
 
-    /** lat·lng 는 둘 다 있거나 둘 다 없음 */
-    private void validateLatLng(StoreForm form) {
-        BigDecimal lat = form.lat();
-        BigDecimal lng = form.lng();
-        if ((lat == null) != (lng == null)) {
-            throw ApiException.badRequest("위도와 경도는 둘 다 입력하거나 둘 다 비워 주세요.");
-        }
-        if (lat != null && (lat.abs().compareTo(BigDecimal.valueOf(90)) > 0
-                || lng.abs().compareTo(BigDecimal.valueOf(180)) > 0)) {
-            throw ApiException.badRequest("위도·경도 값이 올바르지 않습니다.");
-        }
+    /** 주소 → 좌표 (카카오). 못 찾으면 둘 다 null → 매장 상세 지도만 안 보임 */
+    private void fillLatLng(Store store) {
+        KakaoGeocoder.LatLng p = geocoder.find(store.getAddress()).orElse(null);
+        store.setLat(p == null ? null : p.lat());
+        store.setLng(p == null ? null : p.lng());
     }
 
     private void applyForm(Store store, StoreForm form) {
@@ -206,8 +208,6 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
         store.setWebsiteUrl(form.websiteUrl());
         store.setHours(form.hours());
         store.setIntro(form.intro());
-        store.setLat(form.lat());
-        store.setLng(form.lng());
         store.setBizPlaceNo(form.bizPlaceNo());
     }
 }

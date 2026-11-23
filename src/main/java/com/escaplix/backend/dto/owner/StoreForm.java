@@ -1,7 +1,6 @@
 package com.escaplix.backend.dto.owner;
 
 import jakarta.validation.constraints.*;
-import java.math.BigDecimal;
 
 /** C-3, C-4 매장 등록·수정 (multipart 폼 칸). 사업장등록증 파일은 bizPlaceFile 로 따로 */
 public record StoreForm(
@@ -22,9 +21,6 @@ public record StoreForm(
         String hours,
         @NotBlank(message = "매장 소개를 입력해 주세요.") @Size(max = 200, message = "매장 소개는 200자 이내로 입력해 주세요.")
         String intro,
-        /** lat·lng 는 둘 다 있거나 둘 다 없음 (서비스에서 검사) */
-        BigDecimal lat,
-        BigDecimal lng,
         @NotBlank(message = "사업장 등록번호를 입력해 주세요.")
         @Pattern(regexp = "^\\d{3}-\\d{2}-\\d{5}$", message = "사업장 등록번호 형식이 올바르지 않습니다.")
         String bizPlaceNo

@@ -22,6 +22,12 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     /** 관리자가 직접 등록한 매장 (C-1, 관리자) */
     List<Store> findByOwnerIsNullOrderByCreatedAtDesc();
 
+    /** C-1 관리자: 승인된 매장 전체 (매장 관리) */
+    List<Store> findByStatusOrderByCreatedAtDesc(StoreStatus status);
+
+    /** A-10 회원 관리: 사장마다 매장 목록 */
+    List<Store> findByOwnerIsNotNullOrderByCreatedAtAsc();
+
     /** 승인 목록 (C-13): 오래된 순 */
     List<Store> findByStatusOrderByCreatedAtAsc(StoreStatus status);
 

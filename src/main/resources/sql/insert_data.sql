@@ -279,13 +279,6 @@ INSERT INTO review (review_id, member_id, theme_id, rating, escaped, hint_count,
   (14, 9, 4, 1, 'N', 6, 2, 0, 0, TRUNC(SYSDATE) - 1, '여기 말고 OO역 다른 매장이 훨씬 좋아요. 링크 참고하세요.', 'HIDDEN');
 
 
--- 11. 후기 신고
-INSERT INTO report (report_id, review_id, reporter_id, reason, status) VALUES
-  (1, 14, 5, '후기가 아니라 다른 매장 광고예요.', 'DONE');
-INSERT INTO report (report_id, review_id, reporter_id, reason, status) VALUES
-  (2, 14, 7, '홍보 글입니다.', 'DONE');
-INSERT INTO report (report_id, review_id, reporter_id, reason, status) VALUES
-  (3, 7, 10, '테마와 상관없는 비방처럼 보여요.', 'WAIT');
 
 
 -- 12. 파티 (모집 중 2 / 정원 참 1 / 마감 1 / 삭제 1)
@@ -359,7 +352,6 @@ BEGIN
     reset_seq('sq_time_slot',     'time_slot',     'slot_id');
     reset_seq('sq_wishlist',      'wishlist',      'wish_id');
     reset_seq('sq_review',        'review',        'review_id');
-    reset_seq('sq_report',        'report',        'report_id');
     reset_seq('sq_member_genre',  'member_genre',  'id');
     reset_seq('sq_party',         'party',         'party_id');
     reset_seq('sq_party_member',  'party_member',  'id');
@@ -370,7 +362,7 @@ END;
 
 -- 16. 확인용
 -- 테이블별 줄 수 : member 10, genre 8, region 8, area 35, holiday 25, store 6, theme 10, theme_genre 15, time_slot 70,
---                  member_genre 12, wishlist 8, review 14, report 3, party 5, party_member 11, party_message 13
+--                  member_genre 12, wishlist 8, review 14, party 5, party_member 11, party_message 13
 SELECT 'member' t, COUNT(*) cnt FROM member UNION ALL
 SELECT 'store', COUNT(*) FROM store UNION ALL
 SELECT 'theme', COUNT(*) FROM theme UNION ALL

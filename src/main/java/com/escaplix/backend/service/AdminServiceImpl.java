@@ -27,7 +27,6 @@ public class AdminServiceImpl implements AdminService {
 
     private final StoreRepository storeRepository;
     private final ThemeRepository themeRepository;
-    private final ReportRepository reportRepository;
     private final MemberRepository memberRepository;
     private final FileStorage fileStorage;
     private final OwnerServiceSupport support;
@@ -51,7 +50,6 @@ public class AdminServiceImpl implements AdminService {
                 oldestThemeAt,
                 storeRepository.countByStatus(StoreStatus.APPROVED),
                 themeRepository.countByStatus(ThemeStatus.OPEN),
-                reportRepository.countByStatus(ReportStatus.WAIT),
                 memberCountByRole);
     }
 

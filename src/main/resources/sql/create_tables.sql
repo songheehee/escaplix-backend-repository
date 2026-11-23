@@ -11,7 +11,7 @@
 DROP TABLE party_message;
 DROP TABLE party_member;
 DROP TABLE party;
-DROP TABLE report;
+DROP TABLE report;                -- 신고 기능은 뺌. 예전 DB 에 남은 테이블 정리용
 DROP TABLE review;
 DROP TABLE wishlist;
 DROP TABLE member_genre;
@@ -37,7 +37,7 @@ DROP SEQUENCE sq_theme_genre;
 DROP SEQUENCE sq_time_slot;
 DROP SEQUENCE sq_wishlist;
 DROP SEQUENCE sq_review;
-DROP SEQUENCE sq_report;
+DROP SEQUENCE sq_report;          -- 신고 기능은 뺌. 예전 DB 정리용
 DROP SEQUENCE sq_member_genre;
 DROP SEQUENCE sq_party;
 DROP SEQUENCE sq_party_member;
@@ -229,20 +229,6 @@ CREATE TABLE review (
     CONSTRAINT review_status_ck  CHECK (status IN ('VISIBLE', 'HIDDEN'))
 );
 
--- 11. 후기 신고 (사유는 자유 글만. 이번 범위는 접수까지)
-CREATE TABLE report (
-    report_id    NUMBER         NOT NULL,
-    review_id    NUMBER         NOT NULL,
-    reporter_id  NUMBER         NOT NULL,
-    reason       VARCHAR2(900)  NOT NULL,                    -- 한글 300자
-    status       VARCHAR2(10)   DEFAULT 'WAIT' NOT NULL,
-    created_at   DATE           DEFAULT SYSDATE NOT NULL,
-    CONSTRAINT report_pk          PRIMARY KEY (report_id),
-    CONSTRAINT report_review_fk   FOREIGN KEY (review_id) REFERENCES review(review_id),
-    CONSTRAINT report_reporter_fk FOREIGN KEY (reporter_id) REFERENCES member(member_id),
-    CONSTRAINT report_uk          UNIQUE (review_id, reporter_id),
-    CONSTRAINT report_status_ck   CHECK (status IN ('WAIT', 'DONE'))
-);
 
 -- 12. 선호 장르 (손님 가입 때 처음 들어감)
 CREATE TABLE member_genre (
@@ -316,7 +302,6 @@ CREATE SEQUENCE sq_theme_genre;
 CREATE SEQUENCE sq_time_slot;
 CREATE SEQUENCE sq_wishlist;
 CREATE SEQUENCE sq_review;
-CREATE SEQUENCE sq_report;
 CREATE SEQUENCE sq_member_genre;
 CREATE SEQUENCE sq_party;
 CREATE SEQUENCE sq_party_member;

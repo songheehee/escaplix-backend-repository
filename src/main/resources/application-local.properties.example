@@ -8,3 +8,6 @@ jwt.secret=change-me-to-a-random-string-at-least-32-chars
 
 # SQL 보고 싶으면
 # spring.jpa.show-sql=true
+
+# 지도 검색 rest key
+kakao.rest-key=키넣기

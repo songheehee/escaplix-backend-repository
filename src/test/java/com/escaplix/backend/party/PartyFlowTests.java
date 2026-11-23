@@ -44,6 +44,7 @@ class PartyFlowTests {
     @Autowired GenreRepository genreRepository;
     @Autowired ThemeGenreRepository themeGenreRepository;
     @Autowired PartyRepository partyRepository;
+    @Autowired com.escaplix.backend.scheduler.PartyDeadlineScheduler deadlineScheduler;
     @Autowired PartyMemberRepository partyMemberRepository;
     @Autowired PartyMessageRepository partyMessageRepository;
 
@@ -189,8 +190,10 @@ class PartyFlowTests {
                 .andExpect(jsonPath(path).isNotEmpty());
         mvc.perform(get("/api/parties").param("genreIds", "999999").header("Authorization", bearer(viewer)))
                 .andExpect(jsonPath(path).isEmpty());
-        // 로그인 안 하면 401
-        mvc.perform(get("/api/parties")).andExpect(status().isUnauthorized());
+        // 로그인 안 해도 목록은 보임 (참여·강퇴 표시는 false)
+        mvc.perform(get("/api/parties")).andExpect(status().isOk())
+                .andExpect(jsonPath(path).isNotEmpty())
+                .andExpect(jsonPath(path + ".joined").value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(false))));
 
         // 기한 지난 파티는 안 보임 (스케줄러가 아직 안 돌았어도)
         Party p = partyRepository.findById(partyId).orElseThrow();
@@ -224,9 +227,26 @@ class PartyFlowTests {
         // 안내 줄: 방장 JOIN + a JOIN + b JOIN
         assertThat(partyMessageRepository.findTop50ByParty_PartyIdOrderByMessageIdDesc(partyId))
                 .extracting(PartyMessage::getMsgType).containsOnly(MessageType.JOIN).hasSize(3);
-        // FULL 은 목록에서 빠짐
+        // 정원 마감(FULL)도 목록에 남는다 (모집 마감 전까지는 다 보임). 참여자는 joined 로 보임
+        String path = "$[?(@.partyId == " + partyId + ")]";
         mvc.perform(get("/api/parties").param("themeId", String.valueOf(theme.getThemeId())).header("Authorization", a))
-                .andExpect(jsonPath("$[?(@.partyId == " + partyId + ")]").isEmpty());
+                .andExpect(jsonPath(path + ".status").value(org.hamcrest.Matchers.contains("FULL")))
+                .andExpect(jsonPath(path + ".joined").value(org.hamcrest.Matchers.contains(true)));
+
+        // 정원이 차도 모집 기한이 지나면 모집 마감: 목록에서 빠지고, 방·내 채팅에는 CLOSED 로 (스케줄러 전에도)
+        Party p = partyRepository.findById(partyId).orElseThrow();
+        p.setDeadlineAt(LocalDateTime.now().minusMinutes(1));
+        partyRepository.save(p);
+        mvc.perform(get("/api/parties").param("themeId", String.valueOf(theme.getThemeId())).header("Authorization", a))
+                .andExpect(jsonPath(path).isEmpty());
+        mvc.perform(get("/api/parties/" + partyId).header("Authorization", a))
+                .andExpect(jsonPath("$.status").value("CLOSED"));
+        mvc.perform(get("/api/my/parties").header("Authorization", a))
+                .andExpect(jsonPath(path + ".status").value(org.hamcrest.Matchers.contains("CLOSED")));
+        // 스케줄러는 DB 도 CLOSED 로
+        assertThat(partyRepository.findById(partyId).orElseThrow().getStatus()).isEqualTo(PartyStatus.FULL);
+        deadlineScheduler.closeExpired();
+        assertThat(partyRepository.findById(partyId).orElseThrow().getStatus()).isEqualTo(PartyStatus.CLOSED);
     }
 
     @Test
@@ -418,6 +438,25 @@ class PartyFlowTests {
         // 마감된 파티도 채팅 가능 (일정 조율)
         mvc.perform(put("/api/parties/" + partyId + "/close").header("Authorization", leader)).andExpect(status().isOk());
         say(leader, partyId, "마감했어요. 당일에 봬요").andExpect(status().isCreated());
+    }
+
+    @Test
+    void A21_끝난_파티는_읽기_전용_보내면_409_기록은_그대로() throws Exception {
+        String leader = bearer(saveUser("leader"));
+        long partyId = create(leader, 4);
+        say(leader, partyId, "당일에 봬요").andExpect(status().isCreated());
+
+        Party p = partyRepository.findById(partyId).orElseThrow();
+        p.setDeadlineAt(LocalDateTime.now().minusHours(2));
+        p.setPlayAt(LocalDateTime.now().minusMinutes(1));
+        partyRepository.save(p);
+
+        say(leader, partyId, "재밌었어요").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("종료된 파티에는 메시지를 보낼 수 없습니다."));
+        // 지난 메시지는 그대로 읽힌다
+        mvc.perform(get("/api/parties/" + partyId + "/messages").header("Authorization", leader))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.content == '당일에 봬요')]").exists());
     }
 
     @Test

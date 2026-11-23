@@ -17,14 +17,19 @@ import java.util.*;
 @Repository
 public class PartyBrowseRepository {
 
-    /** 목록에 보이는 파티 조건 (아래 쿼리들이 같이 씀). p = Party */
-    private static final String VISIBLE = "p.status = :recruiting and p.deadlineAt > :now";
+    /**
+     * 목록에 보이는 파티 조건 (아래 쿼리들이 같이 씀). p = Party
+     *   모집 중(RECRUITING)·정원 마감(FULL) 이고 모집 기한 전. 기한이 지나면 둘 다 모집 마감(CLOSED)으로 보고 뺀다
+     *   (스케줄러가 CLOSED 로 바꾸기 전이어도 바로 빠지게 기한으로 거름)
+     */
+    private static final String VISIBLE =
+            "(p.status = :recruiting or p.status = :full) and p.deadlineAt > :now";
 
     @PersistenceContext
     private EntityManager em;
 
     /**
-     * 모집 중 파티. 가까운 일정순
+     * 목록 파티 (모집 중 + 정원 마감). 가까운 일정순
      * @param keywordLike 띄어쓰기를 지운 테마 이름 LIKE 패턴 (ThemeBrowseRepository.likePattern 으로 만든다). null 이면 조건 없음
      * @param genreIds    하나라도 맞으면. null·빈 목록이면 조건 없음
      */
@@ -33,6 +38,7 @@ public class PartyBrowseRepository {
                 "select p from Party p join fetch p.theme t join fetch t.store join fetch p.leader where " + VISIBLE);
         Map<String, Object> params = new HashMap<>();
         params.put("recruiting", PartyStatus.RECRUITING);
+        params.put("full", PartyStatus.FULL);
         params.put("now", now);
 
         if (themeId != null) {
@@ -62,6 +68,7 @@ public class PartyBrowseRepository {
                         " where pm.status = :joined and " + VISIBLE + " group by pm.party.partyId", Object[].class)
                 .setParameter("joined", PartyMemberStatus.JOINED)
                 .setParameter("recruiting", PartyStatus.RECRUITING)
+                .setParameter("full", PartyStatus.FULL)
                 .setParameter("now", now)
                 .getResultList();
         Map<Long, Integer> out = new HashMap<>();
@@ -76,6 +83,7 @@ public class PartyBrowseRepository {
                         " where tg.theme.themeId in (select p.theme.themeId from Party p where " + VISIBLE + ")" +
                         " order by tg.theme.themeId, g.genreId", Object[].class)
                 .setParameter("recruiting", PartyStatus.RECRUITING)
+                .setParameter("full", PartyStatus.FULL)
                 .setParameter("now", now)
                 .getResultList();
         Map<Long, List<String>> out = new HashMap<>();

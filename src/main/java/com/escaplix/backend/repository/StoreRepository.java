@@ -8,10 +8,11 @@ import java.util.Optional;
 /** STORE (C) */
 public interface StoreRepository extends JpaRepository<Store, Long> {
 
-    boolean existsByBizPlaceNo(String bizPlaceNo);
+    /** 사업장 등록번호 중복 확인. 폐업(CLOSED) 매장은 빼고 센다 (같은 번호로 새로 등록 가능) */
+    boolean existsByBizPlaceNoAndStatusNot(String bizPlaceNo, StoreStatus status);
 
-    /** 매장 수정(C-4) 때 내 매장을 뺀 나머지에서 번호 중복 확인 */
-    boolean existsByBizPlaceNoAndStoreIdNot(String bizPlaceNo, Long storeId);
+    /** 매장 수정(C-4) 때 내 매장을 뺀 나머지에서 번호 중복 확인 (폐업 매장 제외) */
+    boolean existsByBizPlaceNoAndStatusNotAndStoreIdNot(String bizPlaceNo, StoreStatus status, Long storeId);
 
     /** 관리자 홈(C-12): 가장 오래된 승인 대기 매장 */
     Optional<Store> findFirstByStatusOrderByCreatedAtAsc(StoreStatus status);

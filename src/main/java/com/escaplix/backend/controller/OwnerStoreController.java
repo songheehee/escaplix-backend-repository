@@ -55,6 +55,13 @@ public class OwnerStoreController {
         return ownerStoreService.updateStore(login, storeId, form, bizPlaceFile, storePhoto);
     }
 
+    /** 매장 폐업 · OWNER* (관리자도) · 200. 승인된 매장만, 되돌릴 수 없음 */
+    @PutMapping("/api/owner/stores/{storeId}/close")
+    @Auth({Role.OWNER, Role.ADMIN})
+    public StoreSaveResponse closeStore(LoginMember login, @PathVariable Long storeId) {
+        return ownerStoreService.closeStore(login, storeId);
+    }
+
     /** C-5 매장의 테마 목록 · OWNER* · 200 */
     @GetMapping("/api/owner/stores/{storeId}/themes")
     @Auth({Role.OWNER, Role.ADMIN})

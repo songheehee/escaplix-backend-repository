@@ -36,6 +36,13 @@ public class OwnerServiceSupport {
         }
     }
 
+    /** 폐업한 매장(과 그 테마)은 고칠 수 없다. 조회만 됨 */
+    public void checkNotClosed(Store store) {
+        if (store.getStatus() == StoreStatus.CLOSED) {
+            throw ApiException.conflict("폐업한 매장은 고칠 수 없습니다.");
+        }
+    }
+
     /** 테마의 매장으로 주인 확인 */
     public void checkThemeAccess(LoginMember login, Theme theme) {
         checkStoreAccess(login, theme.getStore());

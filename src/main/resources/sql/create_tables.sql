@@ -57,15 +57,18 @@ CREATE TABLE member (
     biz_no         VARCHAR2(12),                             -- 사업자등록번호 123-45-67890 (사장만)
     biz_file_path  VARCHAR2(500),                            -- 사업자등록증 경로, 비공개 폴더 (사장만)
     created_at     DATE          DEFAULT SYSDATE NOT NULL,
+    withdrawn_at   DATE,                                     -- 탈퇴한 때. NULL = 탈퇴 안 함 (탈퇴하면 줄은 남기고 익명으로)
     CONSTRAINT member_pk          PRIMARY KEY (member_id),
     CONSTRAINT member_login_id_uk UNIQUE (login_id),
-    CONSTRAINT member_nickname_uk UNIQUE (nickname),
     CONSTRAINT member_biz_no_uk   UNIQUE (biz_no),           -- NULL 은 여러 개 허용됨
     CONSTRAINT member_email_uk    UNIQUE (email),            -- NULL 은 여러 개 허용됨
     CONSTRAINT member_role_ck     CHECK (role IN ('USER', 'OWNER', 'ADMIN')),
-    CONSTRAINT member_owner_ck    CHECK ((role = 'OWNER' AND biz_no IS NOT NULL AND biz_file_path IS NOT NULL)
+    -- 사장은 사업자등록번호·등록증 필수. 탈퇴한 사장은 둘 다 지워서 예외
+    CONSTRAINT member_owner_ck    CHECK ((role = 'OWNER' AND (withdrawn_at IS NOT NULL OR (biz_no IS NOT NULL AND biz_file_path IS NOT NULL)))
                                       OR (role <> 'OWNER' AND biz_no IS NULL AND biz_file_path IS NULL))
 );
+-- 닉네임 UNIQUE 는 탈퇴 안 한 회원끼리만 (탈퇴 회원은 모두 "탈퇴한 회원". CASE 가 NULL 이면 인덱스에 안 들어감)
+CREATE UNIQUE INDEX member_nickname_uk ON member (CASE WHEN withdrawn_at IS NULL THEN nickname END);
 
 -- 3. 장르 (코드 테이블)
 CREATE TABLE genre (

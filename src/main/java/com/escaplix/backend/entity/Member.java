@@ -50,4 +50,13 @@ public class Member {
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /** 탈퇴한 때. null = 탈퇴 안 함. 탈퇴하면 줄은 남기고 아이디·닉네임·이메일을 익명으로 바꾼다 */
+    @Column(name = "withdrawn_at")
+    private LocalDateTime withdrawnAt;
+
+    /** 탈퇴한 회원의 닉네임. 후기·채팅·파티에 이 이름으로 남는다 (가입·닉네임 변경에선 못 씀) */
+    public static final String WITHDRAWN_NICKNAME = "탈퇴한 회원";
+
+    public boolean isWithdrawn() { return withdrawnAt != null; }
 }

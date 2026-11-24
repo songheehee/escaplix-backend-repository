@@ -46,6 +46,9 @@ public interface MemberService {
     /** 내 이메일 등록·변경 2: 인증번호가 맞으면 바로 바꿈 */
     void changeMyEmail(LoginMember login, EmailVerifyRequest req);
 
+    /** 회원 탈퇴: 비밀번호 다시 확인. 매장이 남은 사장 409, 관리자 403 */
+    void withdraw(LoginMember login, WithdrawRequest req);
+
     /** A-3 아이디 중복 확인 */
     AvailableResponse checkLoginId(String loginId);
 

@@ -19,6 +19,11 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
     @Query("select p from Party p where p.partyId = :partyId")
     Optional<Party> findByIdForUpdate(@Param("partyId") Long partyId);
 
+    /** 탈퇴: 내가 방장이고 아직 안 끝난(플레이 시각 전) 파티. 삭제된 건 빼고 */
+    @Query("select p.partyId from Party p where p.leader.memberId = :memberId and p.status <> :deleted and p.playAt > :now")
+    java.util.List<Long> findActiveIdsLedBy(@Param("memberId") Long memberId, @Param("deleted") PartyStatus deleted,
+                                            @Param("now") LocalDateTime now);
+
     /** 스케줄러: 기한 지난 RECRUITING → CLOSED */
     @Modifying
     @Query("update Party p set p.status = :to where p.status = :from and p.deadlineAt <= :now")

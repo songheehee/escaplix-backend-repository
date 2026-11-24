@@ -87,14 +87,15 @@ class AdminMemberTests {
 
     @Test
     void A10_역할별_숫자는_검색_조건과_상관없이_전체() throws Exception {
+        // 탈퇴한 회원은 세지 않는다 (다른 테스트가 탈퇴시킨 회원이 같은 H2 에 남아 있을 수 있음)
         save("guest" + tag, "손님" + tag, Role.USER, null);
         mvc.perform(get("/api/admin/members").param("keyword", "없는검색어" + tag).header("Authorization", admin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(0))
                 .andExpect(jsonPath("$.members", hasSize(0)))
-                .andExpect(jsonPath("$.countByRole.USER").value((int) memberRepository.countByRole(Role.USER)))
-                .andExpect(jsonPath("$.countByRole.OWNER").value((int) memberRepository.countByRole(Role.OWNER)))
-                .andExpect(jsonPath("$.countByRole.ADMIN").value((int) memberRepository.countByRole(Role.ADMIN)));
+                .andExpect(jsonPath("$.countByRole.USER").value((int) memberRepository.countByRoleAndWithdrawnAtIsNull(Role.USER)))
+                .andExpect(jsonPath("$.countByRole.OWNER").value((int) memberRepository.countByRoleAndWithdrawnAtIsNull(Role.OWNER)))
+                .andExpect(jsonPath("$.countByRole.ADMIN").value((int) memberRepository.countByRoleAndWithdrawnAtIsNull(Role.ADMIN)));
     }
 
     @Test

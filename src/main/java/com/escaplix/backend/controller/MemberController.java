@@ -94,6 +94,14 @@ public class MemberController {
         memberService.changeMyEmail(login, req);
     }
 
+    /** 회원 탈퇴 · 로그인 · 204. 비밀번호 틀림 400, 매장이 남은 사장 409, 관리자 403 */
+    @PostMapping("/api/members/me/withdraw")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Auth
+    public void withdraw(LoginMember login, @Valid @RequestBody WithdrawRequest req) {
+        memberService.withdraw(login, req);
+    }
+
     /** A-3 아이디 중복 확인 · 공개 · 200 */
     @GetMapping("/api/members/check-login-id")
     public AvailableResponse checkLoginId(@RequestParam String loginId) {

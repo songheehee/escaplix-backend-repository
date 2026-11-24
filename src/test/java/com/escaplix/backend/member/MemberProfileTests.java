@@ -1,5 +1,7 @@
 package com.escaplix.backend.member;
 
+import com.escaplix.backend.common.TestEmails;
+import com.escaplix.backend.common.mail.EmailCodeStore;
 import com.escaplix.backend.repository.MemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,7 @@ class MemberProfileTests {
     @Autowired WebApplicationContext context;
     @Autowired MemberRepository memberRepository;
     @Autowired PasswordEncoder passwordEncoder;
+    @Autowired EmailCodeStore emailCodes;
 
     MockMvc mvc;
 
@@ -50,7 +53,8 @@ class MemberProfileTests {
 
     private void signupUser(String loginId, String nickname) throws Exception {
         mvc.perform(post("/api/members/user").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"loginId\":\"" + loginId + "\",\"password\":\"1234\",\"nickname\":\"" + nickname + "\"}"))
+                        .content("{\"loginId\":\"" + loginId + "\",\"password\":\"1234\",\"nickname\":\"" + nickname
+                                + "\",\"email\":\"" + TestEmails.verified(emailCodes, loginId + "@test.com") + "\"}"))
                 .andExpect(status().isCreated());
     }
 
@@ -65,7 +69,8 @@ class MemberProfileTests {
     private MockMultipartHttpServletRequestBuilder ownerSignup(String loginId, String nickname, String bizNo, byte[] file) {
         var req = multipart("/api/members/owner")
                 .param("loginId", loginId).param("password", "1234")
-                .param("nickname", nickname).param("bizNo", bizNo);
+                .param("nickname", nickname).param("bizNo", bizNo)
+                .param("email", TestEmails.verified(emailCodes, loginId + "@test.com"));
         if (file != null) {
             req.file(new MockMultipartFile("bizFile", "biz.png", "image/png", file));
         }

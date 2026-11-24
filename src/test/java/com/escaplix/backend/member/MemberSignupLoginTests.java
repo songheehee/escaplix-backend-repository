@@ -1,5 +1,7 @@
 package com.escaplix.backend.member;
 
+import com.escaplix.backend.common.TestEmails;
+import com.escaplix.backend.common.mail.EmailCodeStore;
 import com.escaplix.backend.entity.Genre;
 import com.escaplix.backend.repository.GenreRepository;
 import com.escaplix.backend.repository.MemberGenreRepository;
@@ -33,6 +35,7 @@ class MemberSignupLoginTests {
     @Autowired GenreRepository genreRepository;
     @Autowired MemberRepository memberRepository;
     @Autowired MemberGenreRepository memberGenreRepository;
+    @Autowired EmailCodeStore emailCodes;
 
     MockMvc mvc;
     Long horrorId;
@@ -54,9 +57,14 @@ class MemberSignupLoginTests {
     private void signup(String loginId, String nickname, String genreIdsJson) throws Exception {
         mvc.perform(post("/api/members/user").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"loginId\":\"" + loginId + "\",\"password\":\"1234\",\"nickname\":\"" + nickname
-                                + "\",\"genreIds\":" + genreIdsJson + "}"))
+                                + "\",\"email\":\"" + email(loginId) + "\",\"genreIds\":" + genreIdsJson + "}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.memberId").value(notNullValue()));
+    }
+
+    /** 아이디마다 다른 이메일을 인증 완료 상태로 */
+    private String email(String loginId) {
+        return TestEmails.verified(emailCodes, loginId + "@test.com");
     }
 
     // ---------- A-1 ----------
@@ -76,7 +84,7 @@ class MemberSignupLoginTests {
     void 장르가_없거나_null이어도_가입된다() throws Exception {
         signup("newbie2", "장르없음", "[]");
         mvc.perform(post("/api/members/user").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"loginId\":\"newbie3\",\"password\":\"1234\",\"nickname\":\"장르널\"}"))
+                        .content("{\"loginId\":\"newbie3\",\"password\":\"1234\",\"nickname\":\"장르널\",\"email\":\"" + email("newbie3") + "\"}"))
                 .andExpect(status().isCreated());
     }
 
@@ -84,11 +92,11 @@ class MemberSignupLoginTests {
     void 아이디_닉네임이_겹치면_409() throws Exception {
         signup("dupuser", "겹침", "[]");
         mvc.perform(post("/api/members/user").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"loginId\":\"dupuser\",\"password\":\"1234\",\"nickname\":\"다른닉\"}"))
+                        .content("{\"loginId\":\"dupuser\",\"password\":\"1234\",\"nickname\":\"다른닉\",\"email\":\"" + email("dupuser") + "\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("이미 사용 중인 아이디입니다."));
         mvc.perform(post("/api/members/user").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"loginId\":\"other1\",\"password\":\"1234\",\"nickname\":\"겹침\"}"))
+                        .content("{\"loginId\":\"other1\",\"password\":\"1234\",\"nickname\":\"겹침\",\"email\":\"" + email("other1") + "\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("이미 사용 중인 닉네임입니다."));
     }
@@ -96,7 +104,7 @@ class MemberSignupLoginTests {
     @Test
     void 없는_장르면_400이고_회원도_저장되지_않음() throws Exception {
         mvc.perform(post("/api/members/user").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"loginId\":\"nogenre\",\"password\":\"1234\",\"nickname\":\"없는장르\",\"genreIds\":[999999]}"))
+                        .content("{\"loginId\":\"nogenre\",\"password\":\"1234\",\"nickname\":\"없는장르\",\"email\":\"" + email("nogenre") + "\",\"genreIds\":[999999]}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("없는 장르입니다."));
         assertThat(memberRepository.existsByLoginId("nogenre")).isFalse();

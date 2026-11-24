@@ -1,5 +1,7 @@
 package com.escaplix.backend.member;
 
+import com.escaplix.backend.common.TestEmails;
+import com.escaplix.backend.common.mail.EmailCodeStore;
 import com.escaplix.backend.common.auth.JwtProvider;
 import com.escaplix.backend.entity.*;
 import com.escaplix.backend.repository.MemberRepository;
@@ -34,6 +36,7 @@ class AdminMemberTests {
     @Autowired JwtProvider jwtProvider;
     @Autowired MemberRepository memberRepository;
     @Autowired StoreRepository storeRepository;
+    @Autowired EmailCodeStore emailCodes;
 
     MockMvc mvc;
     String tag;
@@ -113,7 +116,8 @@ class AdminMemberTests {
         mvc.perform(multipart("/api/members/owner")
                         .file(new MockMultipartFile("bizFile", "biz.png", "image/png", PNG))
                         .param("loginId", "boss" + tag).param("password", "1234")
-                        .param("nickname", "사장" + tag).param("bizNo", "555-66-" + tag))
+                        .param("nickname", "사장" + tag).param("bizNo", "555-66-" + tag)
+                        .param("email", TestEmails.verified(emailCodes, "boss" + tag + "@test.com")))
                 .andExpect(status().isCreated());
         Member boss = memberRepository.findByLoginId("boss" + tag).orElseThrow();
         Path saved = Path.of("build/test-private").resolve(boss.getBizFilePath());

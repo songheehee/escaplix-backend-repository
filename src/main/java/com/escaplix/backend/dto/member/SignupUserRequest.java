@@ -14,6 +14,10 @@ public record SignupUserRequest(
         @NotBlank(message = "닉네임을 입력해 주세요.")
         @Size(min = 2, max = 20, message = "닉네임은 2~20자로 입력해 주세요.")
         String nickname,
+        /** 가입 전에 인증번호로 확인한 이메일 (POST /api/members/email-code → /verify) */
+        @NotBlank(message = "이메일을 입력해 주세요.")
+        // 형식·길이(100자)는 앞뒤 공백을 지운 뒤 서비스(MemberServiceImpl.normalizeEmail)가 본다
+        String email,
         /** 좋아하는 장르. 없으면 빈 배열 */
         List<Long> genreIds
 ) {}

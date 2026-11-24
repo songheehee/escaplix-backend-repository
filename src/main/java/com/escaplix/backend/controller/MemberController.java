@@ -36,6 +36,20 @@ public class MemberController {
         return memberService.signupOwner(req, bizFile);
     }
 
+    /** 가입 이메일 인증번호 받기 · 공개 · 204. 이미 가입된 이메일 409, 60초 안에 다시 429, 메일 실패 503 */
+    @PostMapping("/api/members/email-code")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void sendSignupEmailCode(@Valid @RequestBody EmailCodeRequest req) {
+        memberService.sendSignupEmailCode(req);
+    }
+
+    /** 가입 이메일 인증번호 확인 · 공개 · 204. 틀림·만료 400 */
+    @PostMapping("/api/members/email-code/verify")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void verifySignupEmail(@Valid @RequestBody EmailVerifyRequest req) {
+        memberService.verifySignupEmail(req);
+    }
+
     /** A-3 아이디 중복 확인 · 공개 · 200 */
     @GetMapping("/api/members/check-login-id")
     public AvailableResponse checkLoginId(@RequestParam String loginId) {

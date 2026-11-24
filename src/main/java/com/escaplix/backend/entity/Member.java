@@ -37,6 +37,10 @@ public class Member {
     @Column(nullable = false, length = 10)
     private Role role;
 
+    /** 이메일 (소문자로 저장, UNIQUE). 이메일 칸이 생기기 전에 가입한 회원은 null */
+    @Column(length = 100)
+    private String email;
+
     @Column(name = "biz_no", length = 12)
     private String bizNo;
 

@@ -79,7 +79,7 @@ class AuthFlowTests {
     void 입력값이_틀리면_400과_한국어_메시지() throws Exception {
         mvc.perform(post("/api/members/user")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"loginId\":\"AB\",\"password\":\"1234\",\"nickname\":\"새회원\",\"genreIds\":[]}"))
+                        .content("{\"loginId\":\"AB\",\"password\":\"1234\",\"nickname\":\"새회원\",\"email\":\"ab@test.com\",\"genreIds\":[]}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("아이디는 영문 소문자와 숫자 4~20자로 입력해 주세요."));
     }

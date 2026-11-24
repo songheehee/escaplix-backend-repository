@@ -7,10 +7,14 @@ import com.escaplix.backend.dto.member.*;
 import com.escaplix.backend.entity.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.escaplix.backend.common.file.FileStorage;
+import com.escaplix.backend.common.mail.EmailCodeStore;
+import com.escaplix.backend.common.mail.EmailCodeStore.Purpose;
+import com.escaplix.backend.common.mail.Mailer;
 import com.escaplix.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -39,11 +43,77 @@ public class MemberServiceImpl implements MemberService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final FileStorage fileStorage;
+    private final Mailer mailer;
+    private final EmailCodeStore emailCodes;
 
     /** 형식 규칙: 가입 DTO(@Pattern·@Size)와 같은 규칙. 중복 확인(A-3~5)은 쿼리 파라미터라 여기서 검사 */
     private static final Pattern LOGIN_ID = Pattern.compile("^[a-z0-9]{4,20}$");
     private static final Pattern BIZ_NO = Pattern.compile("^\\d{3}-\\d{2}-\\d{5}$");
     private static final String LOGIN_FAILED = "아이디 또는 비밀번호가 틀렸습니다.";
+    /** @Email 은 "a@b" 도 통과시켜서, 점(.)이 있는 도메인까지 한 번 더 본다 */
+    private static final Pattern EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+
+    // ---------------------------------------------------------------- 가입 이메일 인증
+
+    /** 메일을 보내는 동안 DB 연결을 잡고 있지 않게 트랜잭션 밖에서 */
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void sendSignupEmailCode(EmailCodeRequest req) {
+        String email = normalizeEmail(req.email());
+        if (memberRepository.existsByEmail(email)) {
+            throw ApiException.conflict("이미 가입된 이메일입니다.");
+        }
+        String code = emailCodes.issue(Purpose.SIGNUP, email);
+        try {
+            mailer.send(email, "[Escaplix] 이메일 인증번호",
+                    "Escaplix 회원가입 이메일 인증번호입니다.\n\n"
+                    + "인증번호: " + code + "\n\n"
+                    + "5분 안에 가입 화면에 입력해 주세요.\n"
+                    + "본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다.");
+        } catch (RuntimeException e) {
+            emailCodes.consume(Purpose.SIGNUP, email);   // 못 보냈으면 60초 기다리지 않고 바로 다시 받을 수 있게
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void verifySignupEmail(EmailVerifyRequest req) {
+        emailCodes.verify(Purpose.SIGNUP, normalizeEmail(req.email()), req.code());
+    }
+
+    /** 앞뒤 공백 지우고 소문자로 (Gmail 등은 대소문자를 구분하지 않아서 같은 주소를 하나로 본다) */
+    static String normalizeEmail(String email) {
+        String e = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
+        if (e.length() > 100) {
+            throw ApiException.badRequest("이메일은 100자 이내로 입력해 주세요.");
+        }
+        if (!EMAIL.matcher(e).matches()) {
+            throw ApiException.badRequest("이메일 형식이 올바르지 않습니다.");
+        }
+        return e;
+    }
+
+    /**
+     * 가입 직전 이메일 확인: 이미 가입된 이메일이면 409, 인증을 안 했으면 400.
+     * 가입이 커밋되면 인증 기록을 지운다 (같은 인증으로 또 가입 못 하게. 가입이 실패하면 인증은 그대로라 다시 시도 가능)
+     */
+    private String checkSignupEmail(String rawEmail) {
+        String email = normalizeEmail(rawEmail);
+        if (memberRepository.existsByEmail(email)) {
+            throw ApiException.conflict("이미 가입된 이메일입니다.");
+        }
+        if (!emailCodes.isVerified(Purpose.SIGNUP, email)) {
+            throw ApiException.badRequest("이메일 인증을 먼저 해 주세요.");
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                emailCodes.consume(Purpose.SIGNUP, email);
+            }
+        });
+        return email;
+    }
 
     @Override
     @Transactional
@@ -65,11 +135,14 @@ public class MemberServiceImpl implements MemberService {
         if (genres.size() != genreIds.size()) {
             throw ApiException.badRequest("없는 장르입니다.");
         }
+        // 이메일은 마지막에 (다른 칸이 틀렸으면 그걸 먼저 알려 줌)
+        String email = checkSignupEmail(req.email());
 
         Member member = new Member();
         member.setLoginId(req.loginId());
         member.setPassword(passwordEncoder.encode(req.password()));
         member.setNickname(req.nickname());
+        member.setEmail(email);
         member.setRole(Role.USER);
         memberRepository.save(member);
 
@@ -96,6 +169,7 @@ public class MemberServiceImpl implements MemberService {
         if (memberRepository.existsByBizNo(req.bizNo())) {
             throw ApiException.conflict("이미 등록된 사업자등록번호입니다.");
         }
+        String email = checkSignupEmail(req.email());
 
         // 2) 비공개 폴더에 저장 (형식·크기 검사는 FileStorage 가 함: jpg·png·webp, 5MB)
         String bizFilePath = fileStorage.savePrivate(bizFile, "biz");
@@ -106,6 +180,7 @@ public class MemberServiceImpl implements MemberService {
         member.setLoginId(req.loginId());
         member.setPassword(passwordEncoder.encode(req.password()));
         member.setNickname(req.nickname());
+        member.setEmail(email);
         member.setRole(Role.OWNER);
         member.setBizNo(req.bizNo());
         member.setBizFilePath(bizFilePath);
@@ -167,7 +242,7 @@ public class MemberServiceImpl implements MemberService {
         Member member = findMe(login);
         String bizNo = member.getRole() == Role.OWNER ? member.getBizNo() : null;
         return new MyInfoResponse(member.getMemberId(), member.getLoginId(), member.getNickname(),
-                member.getRole(), bizNo, member.getCreatedAt());
+                member.getEmail(), member.getRole(), bizNo, member.getCreatedAt());
     }
 
     /**

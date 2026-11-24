@@ -9,5 +9,10 @@ jwt.secret=change-me-to-a-random-string-at-least-32-chars
 # SQL 보고 싶으면
 # spring.jpa.show-sql=true
 
+# 메일 보내는 계정 (Gmail). 비밀번호는 Gmail 로그인 비밀번호가 아니라 "앱 비밀번호" 16자리
+#   둘 다 비워 두면 메일 대신 서버 콘솔에 인증번호가 찍힘 (개발할 땐 이걸로 충분)
+spring.mail.username=
+spring.mail.password=
+
 # 지도 검색 rest key
 kakao.rest-key=키넣기

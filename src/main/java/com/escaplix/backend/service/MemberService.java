@@ -22,6 +22,12 @@ public interface MemberService {
     /** A-2 사장 회원가입 */
     MemberIdResponse signupOwner(SignupOwnerRequest req, MultipartFile bizFile);
 
+    /** 가입 이메일 인증번호 받기 (이미 가입된 이메일이면 409, 60초 안에 또 받으면 429) */
+    void sendSignupEmailCode(EmailCodeRequest req);
+
+    /** 가입 이메일 인증번호 확인 (맞으면 30분 안에 가입) */
+    void verifySignupEmail(EmailVerifyRequest req);
+
     /** A-3 아이디 중복 확인 */
     AvailableResponse checkLoginId(String loginId);
 

@@ -1,5 +1,7 @@
 package com.escaplix.backend.member;
 
+import com.escaplix.backend.common.TestEmails;
+import com.escaplix.backend.common.mail.EmailCodeStore;
 import com.escaplix.backend.repository.MemberRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OwnerSignupRollbackTests {
 
     @Autowired WebApplicationContext context;
+    @Autowired EmailCodeStore emailCodes;
 
     /** saveAndFlush 만 실패하게 만든다 (나머지는 진짜 동작) */
     @MockitoSpyBean MemberRepository memberRepository;
@@ -44,7 +47,8 @@ class OwnerSignupRollbackTests {
         mvc.perform(multipart("/api/members/owner")
                         .file(new MockMultipartFile("bizFile", "biz.png", "image/png", MemberProfileTests.PNG))
                         .param("loginId", "raceboss").param("password", "1234")
-                        .param("nickname", "동시가입").param("bizNo", "321-32-32132"))
+                        .param("nickname", "동시가입").param("bizNo", "321-32-32132")
+                        .param("email", TestEmails.verified(emailCodes, "raceboss@test.com")))
                 .andExpect(status().isConflict());
 
         assertThat(Files.list(dir).count()).isEqualTo(before);

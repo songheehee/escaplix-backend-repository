@@ -53,6 +53,7 @@ CREATE TABLE member (
     password       VARCHAR2(60)  NOT NULL,                   -- BCrypt 해시
     nickname       VARCHAR2(60)  NOT NULL,                   -- 한글 20자. 바꾸면 모든 화면에 바로 반영 (JOIN)
     role           VARCHAR2(10)  NOT NULL,                   -- USER / OWNER / ADMIN
+    email          VARCHAR2(100),                            -- 소문자로 저장. 이메일 칸 생기기 전 가입한 회원은 NULL
     biz_no         VARCHAR2(12),                             -- 사업자등록번호 123-45-67890 (사장만)
     biz_file_path  VARCHAR2(500),                            -- 사업자등록증 경로, 비공개 폴더 (사장만)
     created_at     DATE          DEFAULT SYSDATE NOT NULL,
@@ -60,6 +61,7 @@ CREATE TABLE member (
     CONSTRAINT member_login_id_uk UNIQUE (login_id),
     CONSTRAINT member_nickname_uk UNIQUE (nickname),
     CONSTRAINT member_biz_no_uk   UNIQUE (biz_no),           -- NULL 은 여러 개 허용됨
+    CONSTRAINT member_email_uk    UNIQUE (email),            -- NULL 은 여러 개 허용됨
     CONSTRAINT member_role_ck     CHECK (role IN ('USER', 'OWNER', 'ADMIN')),
     CONSTRAINT member_owner_ck    CHECK ((role = 'OWNER' AND biz_no IS NOT NULL AND biz_file_path IS NOT NULL)
                                       OR (role <> 'OWNER' AND biz_no IS NULL AND biz_file_path IS NULL))

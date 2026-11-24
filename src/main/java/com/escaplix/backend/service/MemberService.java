@@ -37,6 +37,15 @@ public interface MemberService {
     /** 비밀번호 재설정 3: 인증을 마쳤으면 새 비밀번호로 */
     void resetPassword(PasswordResetRequest req);
 
+    /** 아이디 찾기: 그 이메일로 가입한 회원이 있으면 아이디를 메일로. 있든 없든 같은 응답 */
+    void findLoginId(EmailCodeRequest req);
+
+    /** 내 이메일 등록·변경 1: 새 이메일로 인증번호 (다른 회원이 쓰면 409) */
+    void sendMyEmailCode(LoginMember login, EmailCodeRequest req);
+
+    /** 내 이메일 등록·변경 2: 인증번호가 맞으면 바로 바꿈 */
+    void changeMyEmail(LoginMember login, EmailVerifyRequest req);
+
     /** A-3 아이디 중복 확인 */
     AvailableResponse checkLoginId(String loginId);
 

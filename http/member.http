@@ -109,6 +109,14 @@ Content-Type: application/json
 { "loginId": "tester99", "email": "{{email}}", "newPassword": "1234" }
 
 
+### ---------- 아이디 찾기 (공개) ----------
+### 그 이메일로 가입한 회원이 있으면 아이디를 메일로 → 언제나 204 (60초 안에 또 → 429)
+POST {{host}}/api/auth/find-id
+Content-Type: application/json
+
+{ "email": "{{email}}" }
+
+
 ### ---------- A-1 손님 가입 ----------
 
 ### A-1 인증 안 한 이메일 → 400 "이메일 인증을 먼저 해 주세요."
@@ -147,6 +155,24 @@ POST {{host}}/api/auth/login
 Content-Type: application/json
 
 { "loginId": "tester99", "password": "1234" }
+
+
+### ---------- 내 이메일 등록·변경 (tester99 로) ----------
+@newEmail = tester99-new@test.com
+
+### 새 이메일로 인증번호 → 204 (지금 이메일 400, 남이 쓰는 이메일 409)
+POST {{host}}/api/members/me/email-code
+Authorization: Bearer {{tester.response.body.token}}
+Content-Type: application/json
+
+{ "email": "{{newEmail}}" }
+
+### 인증번호가 맞으면 바로 바꿈 → 204 (콘솔·메일의 6자리를 @code 에)
+POST {{host}}/api/members/me/email
+Authorization: Bearer {{tester.response.body.token}}
+Content-Type: application/json
+
+{ "email": "{{newEmail}}", "code": "{{code}}" }
 
 
 ### ---------- A-8 닉네임 · A-9 비밀번호 (tester99 로) ----------

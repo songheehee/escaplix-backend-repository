@@ -48,14 +48,14 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
 
     @Override
     public AvailableResponse checkBizPlaceNo(String bizPlaceNo) {
-        return new AvailableResponse(!storeRepository.existsByBizPlaceNo(bizPlaceNo.trim()));
+        return new AvailableResponse(!storeRepository.existsByBizPlaceNoAndStatusNot(bizPlaceNo.trim(), StoreStatus.CLOSED));
     }
 
     @Override
     @Transactional
     public StoreSaveResponse createStore(LoginMember login, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto) {
         validateArea(form);
-        if (storeRepository.existsByBizPlaceNo(form.bizPlaceNo())) {
+        if (storeRepository.existsByBizPlaceNoAndStatusNot(form.bizPlaceNo(), StoreStatus.CLOSED)) {
             throw ApiException.conflict("이미 등록된 사업장 등록번호입니다.");
         }
 
@@ -99,8 +99,9 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
     public StoreSaveResponse updateStore(LoginMember login, Long storeId, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto) {
         Store store = findStore(storeId);
         support.checkStoreAccess(login, store);
+        support.checkNotClosed(store);
         validateArea(form);
-        if (storeRepository.existsByBizPlaceNoAndStoreIdNot(form.bizPlaceNo(), storeId)) {
+        if (storeRepository.existsByBizPlaceNoAndStatusNotAndStoreIdNot(form.bizPlaceNo(), StoreStatus.CLOSED, storeId)) {
             throw ApiException.conflict("이미 등록된 사업장 등록번호입니다.");
         }
 
@@ -154,6 +155,22 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
                         orZero(t.getReviewCount()),
                         t.getUpdatedAt()))
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public StoreSaveResponse closeStore(LoginMember login, Long storeId) {
+        Store store = findStore(storeId);
+        support.checkStoreAccess(login, store);
+        support.checkNotClosed(store);
+        if (store.getStatus() != StoreStatus.APPROVED) {
+            throw ApiException.conflict("승인된 매장만 폐업할 수 있습니다.");
+        }
+        store.setStatus(StoreStatus.CLOSED);
+        // 그 매장 테마는 전부 운영 종료 (승인 대기·반려 테마도. 매장이 없으니 다시 열 일이 없음)
+        themeRepository.findByStore_StoreIdOrderByCreatedAtDesc(storeId)
+                .forEach(t -> t.setStatus(ThemeStatus.CLOSED));
+        return new StoreSaveResponse(store.getStoreId(), store.getStatus());
     }
 
     // ------------------------------------------------------------------

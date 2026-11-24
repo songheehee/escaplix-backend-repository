@@ -107,7 +107,8 @@ CREATE TABLE area (
     CONSTRAINT area_name_uk   UNIQUE (name)
 );
 
--- 5. 매장 (사장 등록·수정 → PENDING → 관리자 승인 APPROVED / 반려 REJECTED + 사유)
+-- 5. 매장 (사장 등록·수정 → PENDING → 관리자 승인 APPROVED / 반려 REJECTED + 사유, 폐업 CLOSED)
+--    폐업은 사장·관리자 둘 다 할 수 있고 되돌릴 수 없다. 다시 열려면 같은 사업장 등록번호로 새로 등록
 CREATE TABLE store (
     store_id             NUMBER         NOT NULL,
     owner_id             NUMBER,                              -- 등록한 사장. 관리자 직접 등록이면 NULL
@@ -130,12 +131,13 @@ CREATE TABLE store (
     CONSTRAINT store_pk           PRIMARY KEY (store_id),
     CONSTRAINT store_owner_fk     FOREIGN KEY (owner_id) REFERENCES member(member_id),
     CONSTRAINT store_area_fk      FOREIGN KEY (area) REFERENCES area(name),     -- 목록에 없는 지역은 못 넣음
-    CONSTRAINT store_biz_place_uk UNIQUE (biz_place_no),
-    CONSTRAINT store_status_ck    CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    CONSTRAINT store_status_ck    CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CLOSED')),
     CONSTRAINT store_file_ck      CHECK (owner_id IS NULL OR biz_place_file_path IS NOT NULL),
     CONSTRAINT store_reject_ck    CHECK (status <> 'REJECTED' OR reject_reason IS NOT NULL),
     CONSTRAINT store_approved_ck  CHECK (status <> 'APPROVED' OR approved_at IS NOT NULL)
 );
+-- 사업장 등록번호는 폐업 안 한 매장끼리만 겹치면 안 됨 (폐업 매장은 NULL 이라 안 셈 → 같은 번호로 새로 등록 가능)
+CREATE UNIQUE INDEX store_biz_place_uk ON store (CASE WHEN status <> 'CLOSED' THEN biz_place_no END);
 
 -- 6. 테마 (등록·수정 → PENDING → 승인 OPEN / 반려 REJECTED + 사유, 운영 종료 CLOSED)
 CREATE TABLE theme (

@@ -88,6 +88,7 @@ public class OwnerThemeServiceImpl implements OwnerThemeService {
     public ThemeSaveResponse updateTheme(LoginMember login, Long themeId, ThemeForm form, MultipartFile poster) {
         Theme theme = findTheme(themeId);
         support.checkThemeAccess(login, theme);
+        support.checkNotClosed(theme.getStore());
         validatePeople(form);
         List<Genre> genres = loadGenres(form.genreIds());
 
@@ -123,6 +124,7 @@ public class OwnerThemeServiceImpl implements OwnerThemeService {
     public ThemeStatusResponse changeStatus(LoginMember login, Long themeId, ThemeStatusRequest req) {
         Theme theme = findTheme(themeId);
         support.checkThemeAccess(login, theme);
+        support.checkNotClosed(theme.getStore());
 
         ThemeStatus target = req.status();
         if (target != ThemeStatus.OPEN && target != ThemeStatus.CLOSED) {
@@ -151,6 +153,7 @@ public class OwnerThemeServiceImpl implements OwnerThemeService {
     public WeekSlotsResponse saveSlots(LoginMember login, Long themeId, WeekSlotsRequest req) {
         Theme theme = findTheme(themeId);
         support.checkThemeAccess(login, theme);
+        support.checkNotClosed(theme.getStore());
 
         int playMinutes = theme.getPlayMinutes();
         List<LocalTime> weekday = validateSlots("주중", req.weekday(), playMinutes);

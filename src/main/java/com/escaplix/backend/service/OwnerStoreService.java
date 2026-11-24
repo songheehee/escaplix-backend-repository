@@ -31,4 +31,7 @@ public interface OwnerStoreService {
 
     /** C-5 매장의 테마 목록 */
     List<OwnerThemeItem> getStoreThemes(LoginMember login, Long storeId);
+
+    /** 매장 폐업 (사장·관리자). 승인된 매장만. 되돌릴 수 없음 */
+    StoreSaveResponse closeStore(LoginMember login, Long storeId);
 }

@@ -86,6 +86,29 @@ Content-Type: application/json
 { "email": "a@b" }
 
 
+### ---------- 비밀번호 재설정 (아이디 + 가입한 이메일) ----------
+# 아이디·이메일이 맞을 때만 메일이 가지만 응답은 언제나 204 (회원이 맞는지 알려 주지 않음)
+# 개발 모드면 인증번호가 서버 콘솔에 찍힘 → @code 에 넣고 확인 → 새 비밀번호
+
+### 1) 인증번호 받기 → 204 (60초 안에 또 → 429)
+POST {{host}}/api/auth/password-reset/code
+Content-Type: application/json
+
+{ "loginId": "tester99", "email": "{{email}}" }
+
+### 2) 인증번호 확인 → 204
+POST {{host}}/api/auth/password-reset/verify
+Content-Type: application/json
+
+{ "loginId": "tester99", "email": "{{email}}", "code": "{{code}}" }
+
+### 3) 새 비밀번호 → 204 (인증 안 했으면 400 "이메일 인증을 먼저 해 주세요.")
+POST {{host}}/api/auth/password-reset
+Content-Type: application/json
+
+{ "loginId": "tester99", "email": "{{email}}", "newPassword": "1234" }
+
+
 ### ---------- A-1 손님 가입 ----------
 
 ### A-1 인증 안 한 이메일 → 400 "이메일 인증을 먼저 해 주세요."

@@ -28,6 +28,15 @@ public interface MemberService {
     /** 가입 이메일 인증번호 확인 (맞으면 30분 안에 가입) */
     void verifySignupEmail(EmailVerifyRequest req);
 
+    /** 비밀번호 재설정 1: 아이디·이메일이 맞으면 인증번호 메일. 맞든 틀리든 같은 응답 (회원 여부를 알려 주지 않기) */
+    void sendPasswordResetCode(PasswordResetCodeRequest req);
+
+    /** 비밀번호 재설정 2: 인증번호 확인 */
+    void verifyPasswordReset(PasswordResetVerifyRequest req);
+
+    /** 비밀번호 재설정 3: 인증을 마쳤으면 새 비밀번호로 */
+    void resetPassword(PasswordResetRequest req);
+
     /** A-3 아이디 중복 확인 */
     AvailableResponse checkLoginId(String loginId);
 

@@ -11,6 +11,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -58,6 +59,23 @@ public class Mailer {
             log.warn("[메일] 보내기 실패 to={}: {}", to, e.getMessage());
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "메일을 보내지 못했어요. 잠시 후 다시 시도해 주세요.");
         }
+    }
+
+    /**
+     * 기다리지 않고 보내기 (응답은 바로). 비밀번호 재설정처럼 "회원이 맞는지"를 응답 시간으로도 알려 주면 안 될 때 쓴다:
+     * 맞으면 메일 보내느라 1~2초, 아니면 바로 → 시간 차이로 아이디·이메일이 맞는지 알 수 있어서.
+     * 실패해도 사용자에게 알리지 않고 로그만 (화면은 "맞으면 보냈어요"라서 다시 받기를 누르면 됨).
+     * 개발 모드는 콘솔에 찍기만 해서 바로 처리 (테스트가 바로 본문을 꺼낼 수 있게)
+     */
+    public void sendLater(String to, String subject, String text) {
+        if (!smtp) { send(to, subject, text); return; }
+        CompletableFuture.runAsync(() -> {
+            try {
+                send(to, subject, text);
+            } catch (RuntimeException e) {
+                log.warn("[메일] 나중에 보내기 실패 to={}: {}", to, e.getMessage());
+            }
+        });
     }
 
     /** 개발 모드에서 그 사람에게 마지막으로 "보낸" 메일 본문 (테스트용). SMTP 모드면 null */

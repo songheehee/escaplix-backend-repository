@@ -462,6 +462,12 @@ class PartyFlowTests {
         say(leader, partyId, "가".repeat(501)).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("메시지는 500자 이내로 입력해 주세요."));
         say(leader, partyId, "가".repeat(500)).andExpect(status().isCreated());
+        // 길이는 공백을 지운 뒤로 잰다: 앞뒤 공백 + 500자는 통과(500자로 저장), 앞뒤 공백 + 501자는 400
+        say(leader, partyId, "  " + "나".repeat(500) + "  ").andExpect(status().isCreated());
+        assertThat(partyMessageRepository.findTopByParty_PartyIdOrderByMessageIdDesc(partyId).orElseThrow().getContent())
+                .isEqualTo("나".repeat(500));
+        say(leader, partyId, "  " + "나".repeat(501) + "  ").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("메시지는 500자 이내로 입력해 주세요."));
 
         // 마감된 파티도 채팅 가능 (일정 조율)
         mvc.perform(put("/api/parties/" + partyId + "/close").header("Authorization", leader)).andExpect(status().isOk());

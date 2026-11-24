@@ -25,18 +25,25 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     long countByRole(Role role);
 
+    /** 탈퇴 안 한 회원 수 (관리자 요약) */
+    long countByRoleAndWithdrawnAtIsNull(Role role);
+
+    /** 탈퇴한 회원인지 (토큰 검사: 줄이 없으면 false → 기존처럼 findMe 가 401) */
+    boolean existsByMemberIdAndWithdrawnAtIsNotNull(Long memberId);
+
     /**
      * 관리자 회원 목록 (A-10). null 인 조건은 빼고 묻는다. 가입 순(번호 오름차순)
      * @param kw 아이디·닉네임 일부 LIKE 패턴 ("%" + 이스케이프한 검색어 + "%"). null 이면 전체
      */
     @Query("select m from Member m" +
-           " where (:role is null or m.role = :role)" +
+           " where m.withdrawnAt is null" +
+           " and (:role is null or m.role = :role)" +
            " and (:kw is null or m.loginId like :kw escape '\\' or m.nickname like :kw escape '\\')" +
            " order by m.memberId asc")
     List<Member> search(@Param("kw") String kw, @Param("role") Role role);
 
-    /** 역할별 회원 수 (A-10 countByRole). [Role, Long] */
-    @Query("select m.role, count(m) from Member m group by m.role")
+    /** 역할별 회원 수 (A-10 countByRole). 탈퇴한 회원은 빼고. [Role, Long] */
+    @Query("select m.role, count(m) from Member m where m.withdrawnAt is null group by m.role")
     List<Object[]> countGroupByRole();
 
     /** 사장별 매장 수 (A-10 managedStoreCount). 상태와 상관없이 센다. [ownerId, Long] */

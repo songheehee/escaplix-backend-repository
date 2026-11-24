@@ -14,4 +14,9 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
 
     /** 찜 목록 (B-6): 최근 순 */
     List<Wishlist> findByMember_MemberIdOrderByCreatedAtDesc(Long memberId);
+
+    /** 탈퇴할 때 내 찜 전부 */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("delete from Wishlist w where w.member.memberId = :memberId")
+    int deleteAllOfMember(@org.springframework.data.repository.query.Param("memberId") Long memberId);
 }

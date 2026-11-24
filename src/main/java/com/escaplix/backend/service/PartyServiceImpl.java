@@ -195,6 +195,27 @@ public class PartyServiceImpl implements PartyService {
 
     @Override
     @Transactional
+    public void cleanUpForWithdrawal(Long memberId) {
+        LocalDateTime now = LocalDateTime.now();
+        // 1) 내가 방장인 안 끝난 파티 → 삭제 (참여자에게도 목록·방에서 사라짐, deleteParty 와 같음)
+        for (Long partyId : partyRepository.findActiveIdsLedBy(memberId, PartyStatus.DELETED, now)) {
+            lockParty(partyId).setStatus(PartyStatus.DELETED);
+        }
+        // 2) 내가 참여 중인 안 끝난 파티 → 나가기 (leave 와 같음)
+        for (PartyMember row : partyMemberRepository.findByMember_MemberIdAndStatus(memberId, PartyMemberStatus.JOINED)) {
+            Party p = row.getParty();
+            // 내가 방장인 파티(방금 삭제함)·삭제된 파티·끝난 파티는 그대로 (lockParty 는 삭제된 파티면 404 라서 먼저 거름)
+            if (p.getStatus() == PartyStatus.DELETED || p.getLeader().getMemberId().equals(memberId)
+                    || !p.getPlayAt().isAfter(now)) continue;
+            Party party = lockParty(p.getPartyId());
+            partyMemberRepository.delete(row);
+            notice(party, row.getMember(), MessageType.LEAVE);
+            reopenIfFull(party);
+        }
+    }
+
+    @Override
+    @Transactional
     public void kick(LoginMember login, Long partyId, Long memberId) {
         Party party = lockParty(partyId);
         requireLeader(party, login);

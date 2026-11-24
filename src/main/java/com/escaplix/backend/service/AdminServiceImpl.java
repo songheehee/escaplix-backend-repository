@@ -40,7 +40,7 @@ public class AdminServiceImpl implements AdminService {
 
         Map<Role, Long> memberCountByRole = new EnumMap<>(Role.class);
         for (Role role : Role.values()) {
-            memberCountByRole.put(role, memberRepository.countByRole(role));
+            memberCountByRole.put(role, memberRepository.countByRoleAndWithdrawnAtIsNull(role));   // 탈퇴 회원 빼고
         }
 
         return new AdminSummaryResponse(

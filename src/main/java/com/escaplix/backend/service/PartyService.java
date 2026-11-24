@@ -34,6 +34,13 @@ public interface PartyService {
     /** A-17 나가기 */
     void leave(LoginMember login, Long partyId);
 
+    /**
+     * 회원 탈퇴 때 (MemberService 가 부름). 아직 안 끝난 파티만 정리하고 끝난 파티 기록은 그대로 둔다
+     *  - 내가 방장: 삭제 (DELETED)
+     *  - 내가 참여자: 나가기 (나가기 안내 줄, 정원 마감이었으면 다시 모집 중)
+     */
+    void cleanUpForWithdrawal(Long memberId);
+
     /** A-18 강퇴 */
     void kick(LoginMember login, Long partyId, Long memberId);
 

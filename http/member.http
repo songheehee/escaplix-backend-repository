@@ -233,3 +233,12 @@ Content-Type: application/json
 # DELETE FROM member_genre WHERE member_id IN (SELECT member_id FROM member WHERE login_id LIKE 'tester%');
 # DELETE FROM member WHERE login_id LIKE 'tester%';
 # COMMIT;
+
+
+### ---------- 회원 탈퇴 (tester99 로. 하면 이 계정은 못 씀 → 맨 마지막에) ----------
+### 비밀번호 틀림 400 · 매장이 남은 사장 409 · 관리자 403 · 성공 204
+POST {{host}}/api/members/me/withdraw
+Authorization: Bearer {{tester.response.body.token}}
+Content-Type: application/json
+
+{ "password": "1234" }

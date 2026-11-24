@@ -46,6 +46,8 @@ public class MemberServiceImpl implements MemberService {
     private final FileStorage fileStorage;
     private final Mailer mailer;
     private final EmailCodeStore emailCodes;
+    private final WishlistRepository wishlistRepository;
+    private final PartyService partyService;
 
     /** 형식 규칙: 가입 DTO(@Pattern·@Size)와 같은 규칙. 중복 확인(A-3~5)은 쿼리 파라미터라 여기서 검사 */
     private static final Pattern LOGIN_ID = Pattern.compile("^[a-z0-9]{4,20}$");
@@ -132,6 +134,57 @@ public class MemberServiceImpl implements MemberService {
                 emailCodes.consume(Purpose.PASSWORD_RESET, key);
             }
         });
+    }
+
+    // ---------------------------------------------------------------- 회원 탈퇴
+    //   줄은 지우지 않는다 (후기·파티·채팅이 이 회원을 가리킴). 대신 익명으로:
+    //   아이디 "withdrawn#번호" (가입 규칙상 아무도 못 씀) · 닉네임 "탈퇴한 회원" · 이메일·사업자 정보 지움 · 비밀번호는 아무도 모르는 값
+    //   → 같은 아이디·이메일·닉네임으로 다시 가입할 수 있다
+
+    @Override
+    @Transactional
+    public void withdraw(LoginMember login, WithdrawRequest req) {
+        Member me = findMe(login);
+        if (me.getRole() == Role.ADMIN) {
+            throw ApiException.forbidden("관리자 계정은 탈퇴할 수 없어요.");
+        }
+        if (!passwordEncoder.matches(req.password(), me.getPassword())) {
+            throw ApiException.badRequest("비밀번호가 맞지 않아요.");
+        }
+        if (me.getRole() == Role.OWNER && storeRepository.countByOwner_MemberId(me.getMemberId()) > 0) {
+            throw ApiException.conflict("매장이 남아 있어서 탈퇴할 수 없어요. 매장을 먼저 정리해 주세요.");
+        }
+
+        // 1) 안 끝난 파티: 방장이면 삭제, 참여자면 나가기. 끝난 파티 기록은 남김
+        partyService.cleanUpForWithdrawal(me.getMemberId());
+        // 2) 나만 보던 것: 찜 · 선호 장르
+        wishlistRepository.deleteAllOfMember(me.getMemberId());
+        memberGenreRepository.deleteByMember_MemberId(me.getMemberId());
+        // 3) 익명으로 (후기·채팅은 "탈퇴한 회원"으로 남음)
+        String bizFile = me.getBizFilePath();
+        me.setLoginId("withdrawn#" + me.getMemberId());
+        me.setNickname(Member.WITHDRAWN_NICKNAME);
+        me.setEmail(null);
+        me.setBizNo(null);
+        me.setBizFilePath(null);
+        me.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));   // 아무도 모르는 비밀번호
+        me.setWithdrawnAt(java.time.LocalDateTime.now());
+        memberRepository.flush();
+        // 4) 사업자등록증 파일은 탈퇴가 커밋된 뒤에 지움 (실패해서 되돌아가면 파일은 그대로)
+        if (bizFile != null) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    fileStorage.deleteQuietly(bizFile);
+                }
+            });
+        }
+    }
+
+    /** 닉네임을 이미 누가 쓰는지. "탈퇴한 회원"은 탈퇴 표시용이라 누구도 못 씀 */
+    private boolean nicknameTaken(String nickname) {
+        return Member.WITHDRAWN_NICKNAME.equals(nickname == null ? null : nickname.trim())
+                || memberRepository.existsByNickname(nickname);
     }
 
     // ---------------------------------------------------------------- 아이디 찾기
@@ -257,7 +310,7 @@ public class MemberServiceImpl implements MemberService {
         if (memberRepository.existsByLoginId(req.loginId())) {
             throw ApiException.conflict("이미 사용 중인 아이디입니다.");
         }
-        if (memberRepository.existsByNickname(req.nickname())) {
+        if (nicknameTaken(req.nickname())) {
             throw ApiException.conflict("이미 사용 중인 닉네임입니다.");
         }
 
@@ -298,7 +351,7 @@ public class MemberServiceImpl implements MemberService {
         if (memberRepository.existsByLoginId(req.loginId())) {
             throw ApiException.conflict("이미 사용 중인 아이디입니다.");
         }
-        if (memberRepository.existsByNickname(req.nickname())) {
+        if (nicknameTaken(req.nickname())) {
             throw ApiException.conflict("이미 사용 중인 닉네임입니다.");
         }
         if (memberRepository.existsByBizNo(req.bizNo())) {
@@ -349,7 +402,7 @@ public class MemberServiceImpl implements MemberService {
         if (nickname == null || nickname.isBlank() || nickname.length() < 2 || nickname.length() > 20) {
             throw ApiException.badRequest("닉네임은 2~20자로 입력해 주세요.");
         }
-        return new AvailableResponse(!memberRepository.existsByNickname(nickname));
+        return new AvailableResponse(!nicknameTaken(nickname));
     }
 
     @Override
@@ -385,6 +438,7 @@ public class MemberServiceImpl implements MemberService {
      */
     private Member findMe(LoginMember login) {
         return memberRepository.findById(login.memberId())
+                .filter(m -> !m.isWithdrawn())
                 .orElseThrow(() -> ApiException.unauthorized("다시 로그인해 주세요."));
     }
 
@@ -394,7 +448,7 @@ public class MemberServiceImpl implements MemberService {
         Member member = findMe(login);
         // 지금 내 닉네임 그대로면 "이미 사용 중"이 아니라 그냥 성공 (새 토큰만 준다)
         if (!member.getNickname().equals(req.nickname())) {
-            if (memberRepository.existsByNickname(req.nickname())) {
+            if (nicknameTaken(req.nickname())) {
                 throw ApiException.conflict("이미 사용 중인 닉네임입니다.");
             }
             member.setNickname(req.nickname());

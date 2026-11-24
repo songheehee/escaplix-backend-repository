@@ -50,6 +50,27 @@ public class MemberController {
         memberService.verifySignupEmail(req);
     }
 
+    /** 비밀번호 재설정 1 · 공개 · 204. 아이디·이메일이 맞으면 인증번호 메일 (맞든 틀리든 같은 응답). 60초 안에 다시 429 */
+    @PostMapping("/api/auth/password-reset/code")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void sendPasswordResetCode(@Valid @RequestBody PasswordResetCodeRequest req) {
+        memberService.sendPasswordResetCode(req);
+    }
+
+    /** 비밀번호 재설정 2 · 공개 · 204. 틀림·만료 400 */
+    @PostMapping("/api/auth/password-reset/verify")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void verifyPasswordReset(@Valid @RequestBody PasswordResetVerifyRequest req) {
+        memberService.verifyPasswordReset(req);
+    }
+
+    /** 비밀번호 재설정 3 · 공개 · 204. 인증 안 했으면 400 */
+    @PostMapping("/api/auth/password-reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody PasswordResetRequest req) {
+        memberService.resetPassword(req);
+    }
+
     /** A-3 아이디 중복 확인 · 공개 · 200 */
     @GetMapping("/api/members/check-login-id")
     public AvailableResponse checkLoginId(@RequestParam String loginId) {

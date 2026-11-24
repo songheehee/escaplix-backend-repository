@@ -82,6 +82,68 @@ public class MemberServiceImpl implements MemberService {
         emailCodes.verify(Purpose.SIGNUP, normalizeEmail(req.email()), req.code());
     }
 
+    // ---------------------------------------------------------------- 비밀번호 재설정 (아이디 + 이메일 인증)
+    //   인증 기록은 "아이디 이메일" 한 쌍으로 센다. 회원이 맞는지와 상관없이 같은 규칙(60초·5번·5분)이 걸려서
+    //   응답만 보고는 아이디·이메일이 맞는지 알 수 없다. 메일은 맞을 때만 (기다리지 않고) 보낸다
+
+    private static final String RESET_NOT_VERIFIED = "이메일 인증을 먼저 해 주세요.";
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void sendPasswordResetCode(PasswordResetCodeRequest req) {
+        String loginId = req.loginId().trim();
+        String email = normalizeEmail(req.email());
+        String code = emailCodes.issue(Purpose.PASSWORD_RESET, resetKey(loginId, email));   // 60초 안에 또 → 429 (맞든 틀리든)
+        if (findByLoginIdAndEmail(loginId, email) != null) {
+            mailer.sendLater(email, "[Escaplix] 비밀번호 재설정 인증번호",
+                    "Escaplix 비밀번호 재설정 인증번호입니다.\n\n"
+                    + "아이디: " + loginId + "\n"
+                    + "인증번호: " + code + "\n\n"
+                    + "5분 안에 비밀번호 찾기 화면에 입력해 주세요.\n"
+                    + "본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다. 비밀번호는 바뀌지 않아요.");
+        }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void verifyPasswordReset(PasswordResetVerifyRequest req) {
+        emailCodes.verify(Purpose.PASSWORD_RESET, resetKey(req.loginId().trim(), normalizeEmail(req.email())), req.code());
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(PasswordResetRequest req) {
+        String loginId = req.loginId().trim();
+        String email = normalizeEmail(req.email());
+        String key = resetKey(loginId, email);
+        if (!emailCodes.isVerified(Purpose.PASSWORD_RESET, key)) {
+            throw ApiException.badRequest(RESET_NOT_VERIFIED);
+        }
+        Member member = findByLoginIdAndEmail(loginId, email);
+        if (member == null) {   // 메일을 못 받았으니 인증번호를 맞힐 수 없지만, 우연히 맞힌 경우도 막는다
+            throw ApiException.badRequest(RESET_NOT_VERIFIED);
+        }
+        member.setPassword(passwordEncoder.encode(req.newPassword()));
+        // 다 바꾸면 인증 기록을 지운다 (같은 인증으로 또 못 바꾸게)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                emailCodes.consume(Purpose.PASSWORD_RESET, key);
+            }
+        });
+    }
+
+    private static String resetKey(String loginId, String email) {
+        return loginId + " " + email;   // 아이디엔 공백이 없어서 둘을 구분할 수 있음
+    }
+
+    /** 아이디와 이메일이 둘 다 맞는 회원. 없으면 null (이메일을 안 넣은 예전 회원도 null) */
+    private Member findByLoginIdAndEmail(String loginId, String email) {
+        return memberRepository.findByLoginId(loginId)
+                .filter(m -> email.equals(m.getEmail()))
+                .orElse(null);
+    }
+
     /** 앞뒤 공백 지우고 소문자로 (Gmail 등은 대소문자를 구분하지 않아서 같은 주소를 하나로 본다) */
     static String normalizeEmail(String email) {
         String e = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);

@@ -71,6 +71,29 @@ public class MemberController {
         memberService.resetPassword(req);
     }
 
+    /** 아이디 찾기 · 공개 · 204. 그 이메일로 가입한 회원이 있으면 아이디를 메일로 (있든 없든 같은 응답). 60초 안에 다시 429 */
+    @PostMapping("/api/auth/find-id")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void findLoginId(@Valid @RequestBody EmailCodeRequest req) {
+        memberService.findLoginId(req);
+    }
+
+    /** 내 이메일 등록·변경 1 · 로그인 · 204. 새 이메일로 인증번호 (지금 이메일 400, 다른 회원이 씀 409) */
+    @PostMapping("/api/members/me/email-code")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Auth
+    public void sendMyEmailCode(LoginMember login, @Valid @RequestBody EmailCodeRequest req) {
+        memberService.sendMyEmailCode(login, req);
+    }
+
+    /** 내 이메일 등록·변경 2 · 로그인 · 204. 인증번호가 맞으면 바로 바꿈 (틀림·만료 400) */
+    @PostMapping("/api/members/me/email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Auth
+    public void changeMyEmail(LoginMember login, @Valid @RequestBody EmailVerifyRequest req) {
+        memberService.changeMyEmail(login, req);
+    }
+
     /** A-3 아이디 중복 확인 · 공개 · 200 */
     @GetMapping("/api/members/check-login-id")
     public AvailableResponse checkLoginId(@RequestParam String loginId) {

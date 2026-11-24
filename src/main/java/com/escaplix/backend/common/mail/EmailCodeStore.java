@@ -19,8 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class EmailCodeStore {
 
-    /** 인증 용도 */
-    public enum Purpose { SIGNUP, PASSWORD_RESET }
+    /** 인증 용도. FIND_ID 는 인증번호 없이 throttle(60초에 한 번)에만 쓴다 */
+    public enum Purpose { SIGNUP, PASSWORD_RESET, EMAIL_CHANGE, FIND_ID }
 
     static final Duration CODE_TTL = Duration.ofMinutes(5);
     static final Duration RESEND_AFTER = Duration.ofSeconds(60);
@@ -30,6 +30,7 @@ public class EmailCodeStore {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final Map<String, Entry> entries = new ConcurrentHashMap<>();
+    private final Map<String, Instant> lastSent = new ConcurrentHashMap<>();   // throttle 용
     private Clock clock = Clock.systemDefaultZone();
 
     private static final class Entry {
@@ -88,6 +89,22 @@ public class EmailCodeStore {
     public boolean isVerified(Purpose purpose, String email) {
         Entry e = entries.get(key(purpose, email));
         return e != null && e.verifiedAt != null && clock.instant().isBefore(e.verifiedAt.plus(VERIFIED_TTL));
+    }
+
+    /**
+     * 인증번호 없이 "60초에 한 번"만 막는다 (아이디 찾기 메일: 남의 메일함에 계속 보내지 못하게).
+     * 60초 안에 또 부르면 429. 회원이 맞든 틀리든 똑같이 불러야 응답으로 회원 여부를 알 수 없다
+     */
+    public void throttle(Purpose purpose, String key) {
+        Instant now = clock.instant();
+        lastSent.values().removeIf(t -> now.isAfter(t.plus(RESEND_AFTER)));
+        String k = key(purpose, key);
+        Instant last = lastSent.get(k);
+        if (last != null && now.isBefore(last.plus(RESEND_AFTER))) {
+            long wait = (Duration.between(now, last.plus(RESEND_AFTER)).toMillis() + 999) / 1000;
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, wait + "초 뒤에 다시 시도해 주세요.");
+        }
+        lastSent.put(k, now);
     }
 
     /** 인증 기록을 지운다 (가입·재설정을 마친 뒤: 같은 인증으로 두 번 못 쓰게) */

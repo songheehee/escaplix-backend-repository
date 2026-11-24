@@ -12,6 +12,7 @@ import com.escaplix.backend.common.mail.EmailCodeStore.Purpose;
 import com.escaplix.backend.common.mail.Mailer;
 import com.escaplix.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -131,6 +132,78 @@ public class MemberServiceImpl implements MemberService {
                 emailCodes.consume(Purpose.PASSWORD_RESET, key);
             }
         });
+    }
+
+    // ---------------------------------------------------------------- 아이디 찾기
+
+    /** 메일은 기다리지 않고 (응답 시간으로 회원 여부를 알 수 없게). 60초에 한 번 (남의 메일함에 계속 보내지 못하게) */
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void findLoginId(EmailCodeRequest req) {
+        String email = normalizeEmail(req.email());
+        emailCodes.throttle(Purpose.FIND_ID, email);
+        memberRepository.findByEmail(email).ifPresent(m ->
+                mailer.sendLater(email, "[Escaplix] 아이디 안내",
+                        "이 이메일로 가입한 Escaplix 아이디입니다.\n\n"
+                        + "아이디: " + m.getLoginId() + "\n\n"
+                        + "비밀번호가 기억나지 않으면 로그인 화면의 \"비밀번호를 잊으셨나요?\"에서 바꿀 수 있어요.\n"
+                        + "본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다."));
+    }
+
+    // ---------------------------------------------------------------- 내 이메일 등록·변경 (로그인)
+    //   이메일 칸이 생기기 전에 가입한 회원이 이메일을 넣거나, 바꾸고 싶을 때. 새 이메일로 인증번호 → 맞으면 바로 바꿈
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void sendMyEmailCode(LoginMember login, EmailCodeRequest req) {
+        String email = normalizeEmail(req.email());
+        Member me = findMe(login);
+        if (email.equals(me.getEmail())) {
+            throw ApiException.badRequest("지금 쓰고 있는 이메일이에요.");
+        }
+        if (memberRepository.existsByEmail(email)) {
+            throw ApiException.conflict("이미 가입된 이메일입니다.");
+        }
+        String key = myEmailKey(login, email);
+        String code = emailCodes.issue(Purpose.EMAIL_CHANGE, key);
+        try {
+            mailer.send(email, "[Escaplix] 이메일 인증번호",
+                    "Escaplix 이메일 등록 인증번호입니다.\n\n"
+                    + "인증번호: " + code + "\n\n"
+                    + "5분 안에 내 정보 화면에 입력해 주세요.\n"
+                    + "본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다.");
+        } catch (RuntimeException e) {
+            emailCodes.consume(Purpose.EMAIL_CHANGE, key);   // 못 보냈으면 바로 다시 받을 수 있게
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void changeMyEmail(LoginMember login, EmailVerifyRequest req) {
+        String email = normalizeEmail(req.email());
+        String key = myEmailKey(login, email);
+        emailCodes.verify(Purpose.EMAIL_CHANGE, key, req.code());   // 틀림·만료 400
+        Member me = findMe(login);
+        if (!email.equals(me.getEmail()) && memberRepository.existsByEmail(email)) {
+            throw ApiException.conflict("이미 가입된 이메일입니다.");   // 인증하는 사이 다른 사람이 가입
+        }
+        me.setEmail(email);
+        try {
+            memberRepository.flush();   // 동시에 같은 이메일이 들어오면 UNIQUE 위반이 여기서
+        } catch (DataIntegrityViolationException e) {
+            throw ApiException.conflict("이미 가입된 이메일입니다.");
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                emailCodes.consume(Purpose.EMAIL_CHANGE, key);
+            }
+        });
+    }
+
+    private static String myEmailKey(LoginMember login, String email) {
+        return login.memberId() + " " + email;
     }
 
     private static String resetKey(String loginId, String email) {

@@ -20,7 +20,7 @@ public interface OwnerStoreService {
     /** C-1 내 매장 목록 */
     List<OwnerStoreItem> getMyStores(LoginMember login);
 
-    /** C-2 사업장 등록번호 중복 확인 */
+    /** C-2 사업장 관리번호 중복 확인 */
     AvailableResponse checkBizPlaceNo(String bizPlaceNo);
 
     /** C-3 매장 등록 */

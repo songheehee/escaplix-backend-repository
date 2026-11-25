@@ -55,7 +55,7 @@ public interface MemberService {
     /** A-4 닉네임 중복 확인 */
     AvailableResponse checkNickname(String nickname);
 
-    /** A-5 사업자등록번호 중복 확인 */
+    /** A-5 사업자 등록번호 중복 확인 */
     AvailableResponse checkBizNo(String bizNo);
 
     /** A-6 로그인 */

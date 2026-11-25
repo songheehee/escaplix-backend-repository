@@ -70,7 +70,7 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
 
         boolean admin = login.is(Role.ADMIN);
         if (!admin && !hasFile(bizPlaceFile)) {
-            throw ApiException.badRequest("사업장등록증 이미지를 첨부해 주세요.");
+            throw ApiException.badRequest("사업장 증빙 서류 이미지를 첨부해 주세요.");
         }
 
         Store store = new Store();

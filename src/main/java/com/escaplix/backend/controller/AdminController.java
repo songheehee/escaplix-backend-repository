@@ -45,7 +45,7 @@ public class AdminController {
         return adminService.getStore(storeId);
     }
 
-    /** C-15 사업장등록증 이미지 · ADMIN · 200 */
+    /** C-15 사업장 증빙 서류 이미지 · ADMIN · 200 */
     @GetMapping("/api/admin/stores/{storeId}/biz-place-file")
     @Auth(Role.ADMIN)
     public ResponseEntity<Resource> getBizPlaceFile(@PathVariable Long storeId) {

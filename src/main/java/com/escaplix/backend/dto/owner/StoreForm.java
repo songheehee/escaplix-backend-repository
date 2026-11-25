@@ -2,7 +2,7 @@ package com.escaplix.backend.dto.owner;
 
 import jakarta.validation.constraints.*;
 
-/** C-3, C-4 매장 등록·수정 (multipart 폼 칸). 사업장등록증 파일은 bizPlaceFile 로 따로 */
+/** C-3, C-4 매장 등록·수정 (multipart 폼 칸). 사업장 증빙 서류 파일은 bizPlaceFile 로 따로 */
 public record StoreForm(
         @NotBlank(message = "매장 이름을 입력해 주세요.") @Size(max = 50, message = "매장 이름은 50자 이내로 입력해 주세요.")
         String name,

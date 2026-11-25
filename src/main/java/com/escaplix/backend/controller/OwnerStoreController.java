@@ -31,7 +31,7 @@ public class OwnerStoreController {
         return ownerStoreService.getMyStores(login);
     }
 
-    /** C-2 사업장 등록번호 중복 확인 · OWNER* · 200 */
+    /** C-2 사업장 관리번호 중복 확인 · OWNER* · 200 */
     @GetMapping("/api/owner/stores/check-biz-place-no")
     @Auth({Role.OWNER, Role.ADMIN})
     public AvailableResponse checkBizPlaceNo(@RequestParam String bizPlaceNo) {

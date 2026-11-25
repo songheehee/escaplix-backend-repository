@@ -25,7 +25,7 @@ public interface AdminService {
     /** C-14 매장 승인 상세 */
     AdminStoreDetailResponse getStore(Long storeId);
 
-    /** C-15 사업장등록증 이미지 */
+    /** C-15 사업장 증빙 서류 이미지 */
     FileDownload getBizPlaceFile(Long storeId);
 
     /** C-16 매장 승인·반려 */

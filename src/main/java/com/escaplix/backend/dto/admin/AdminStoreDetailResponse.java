@@ -3,7 +3,7 @@ package com.escaplix.backend.dto.admin;
 import com.escaplix.backend.entity.*;
 import java.time.LocalDateTime;
 
-/** C-14 매장 승인 상세. 서류: 사업장등록증 C-15, 사장 사업자등록증 A-11 */
+/** C-14 매장 승인 상세. 서류: 사업장 증빙 서류 C-15, 사장 사업자등록증 A-11 */
 public record AdminStoreDetailResponse(
         Long storeId,
         String name,

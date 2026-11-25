@@ -46,6 +46,14 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
         return stores.stream().map(this::toItem).toList();
     }
 
+    /** 새 번호는 11자리만. 예전 10자리 번호(더미 데이터)는 바꾸지 않고 다시 저장할 때만 통과 */
+    private void checkBizPlaceNoForm(String bizPlaceNo, String current) {
+        if (bizPlaceNo.equals(current)) return;
+        if (!bizPlaceNo.matches("^\\d{3}-\\d{2}-\\d{5}-\\d$")) {
+            throw ApiException.badRequest("사업장 관리번호는 숫자 11자리입니다. (000-00-00000-0)");
+        }
+    }
+
     @Override
     public AvailableResponse checkBizPlaceNo(String bizPlaceNo) {
         return new AvailableResponse(!storeRepository.existsByBizPlaceNoAndStatusNot(bizPlaceNo.trim(), StoreStatus.CLOSED));
@@ -55,13 +63,14 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
     @Transactional
     public StoreSaveResponse createStore(LoginMember login, StoreForm form, MultipartFile bizPlaceFile, MultipartFile storePhoto) {
         validateArea(form);
+        checkBizPlaceNoForm(form.bizPlaceNo(), null);
         if (storeRepository.existsByBizPlaceNoAndStatusNot(form.bizPlaceNo(), StoreStatus.CLOSED)) {
-            throw ApiException.conflict("이미 등록된 사업장 등록번호입니다.");
+            throw ApiException.conflict("이미 등록된 사업장 관리번호입니다.");
         }
 
         boolean admin = login.is(Role.ADMIN);
         if (!admin && !hasFile(bizPlaceFile)) {
-            throw ApiException.badRequest("사업장등록증 이미지를 첨부해 주세요.");
+            throw ApiException.badRequest("사업장 증빙 서류 이미지를 첨부해 주세요.");
         }
 
         Store store = new Store();
@@ -101,8 +110,9 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
         support.checkStoreAccess(login, store);
         support.checkNotClosed(store);
         validateArea(form);
+        checkBizPlaceNoForm(form.bizPlaceNo(), store.getBizPlaceNo());
         if (storeRepository.existsByBizPlaceNoAndStatusNotAndStoreIdNot(form.bizPlaceNo(), StoreStatus.CLOSED, storeId)) {
-            throw ApiException.conflict("이미 등록된 사업장 등록번호입니다.");
+            throw ApiException.conflict("이미 등록된 사업장 관리번호입니다.");
         }
 
         String oldAddress = store.getAddress();
@@ -224,7 +234,7 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
         store.setPhone(form.phone());
         store.setWebsiteUrl(form.websiteUrl());
         store.setHours(form.hours());
-        store.setIntro(form.intro());
+        store.setIntro(form.intro() == null || form.intro().isBlank() ? null : form.intro().strip());   // 소개는 선택
         store.setBizPlaceNo(form.bizPlaceNo());
     }
 }

@@ -90,7 +90,7 @@ public class AdminServiceImpl implements AdminService {
         String path = s.getBizPlaceFilePath();
         if (path == null) {
             // 관리자 직접 등록 매장은 파일이 없을 수 있다
-            throw ApiException.notFound("사업장등록증 파일이 없습니다.");
+            throw ApiException.notFound("사업장 증빙 서류 파일이 없습니다.");
         }
         return new FileDownload(fileStorage.loadPrivate(path), FileStorage.contentType(path));
     }

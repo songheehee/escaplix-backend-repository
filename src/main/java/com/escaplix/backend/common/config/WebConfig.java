@@ -46,7 +46,7 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     /**
-     * 공개 사진만 /uploads/** 로 내려 준다. 사업자·사업장 등록증(private 폴더)은 절대 여기 넣지 않는다
+     * 공개 사진만 /uploads/** 로 내려 준다. 사업자등록증·사업장 증빙 서류(private 폴더)은 절대 여기 넣지 않는다
      *   /uploads/posters/{파일}  테마 사진
      *   /uploads/stores/{파일}   매장 사진
      * 아래 순서로 찾는다

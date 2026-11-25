@@ -359,7 +359,7 @@ public class MemberServiceImpl implements MemberService {
             throw ApiException.conflict("이미 사용 중인 닉네임입니다.");
         }
         if (memberRepository.existsByBizNo(req.bizNo())) {
-            throw ApiException.conflict("이미 등록된 사업자등록번호입니다.");
+            throw ApiException.conflict("이미 등록된 사업자 등록번호입니다.");
         }
         String email = checkSignupEmail(req.email());
 
@@ -412,7 +412,7 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public AvailableResponse checkBizNo(String bizNo) {
         if (bizNo == null || !BIZ_NO.matcher(bizNo).matches()) {
-            throw ApiException.badRequest("사업자등록번호 형식이 올바르지 않습니다.");
+            throw ApiException.badRequest("사업자 등록번호 형식이 올바르지 않습니다.");
         }
         return new AvailableResponse(!memberRepository.existsByBizNo(bizNo));
     }

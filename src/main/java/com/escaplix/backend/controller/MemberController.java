@@ -114,7 +114,7 @@ public class MemberController {
         return memberService.checkNickname(nickname);
     }
 
-    /** A-5 사업자등록번호 중복 확인 · 공개 · 200 */
+    /** A-5 사업자 등록번호 중복 확인 · 공개 · 200 */
     @GetMapping("/api/members/check-biz-no")
     public AvailableResponse checkBizNo(@RequestParam String bizNo) {
         return memberService.checkBizNo(bizNo);

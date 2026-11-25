@@ -17,7 +17,7 @@ public record SignupOwnerRequest(
         @NotBlank(message = "이메일을 입력해 주세요.")
         // 형식·길이(100자)는 앞뒤 공백을 지운 뒤 서비스(MemberServiceImpl.normalizeEmail)가 본다
         String email,
-        @NotBlank(message = "사업자등록번호를 입력해 주세요.")
-        @Pattern(regexp = "^\\d{3}-\\d{2}-\\d{5}$", message = "사업자등록번호 형식이 올바르지 않습니다.")
+        @NotBlank(message = "사업자 등록번호를 입력해 주세요.")
+        @Pattern(regexp = "^\\d{3}-\\d{2}-\\d{5}$", message = "사업자 등록번호 형식이 올바르지 않습니다.")
         String bizNo
 ) {}

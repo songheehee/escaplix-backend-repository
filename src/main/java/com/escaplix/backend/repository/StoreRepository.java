@@ -8,7 +8,7 @@ import java.util.Optional;
 /** STORE (C) */
 public interface StoreRepository extends JpaRepository<Store, Long> {
 
-    /** 사업장 등록번호 중복 확인. 폐업(CLOSED) 매장은 빼고 센다 (같은 번호로 새로 등록 가능) */
+    /** 사업장 관리번호 중복 확인. 폐업(CLOSED) 매장은 빼고 센다 (같은 번호로 새로 등록 가능) */
     boolean existsByBizPlaceNoAndStatusNot(String bizPlaceNo, StoreStatus status);
 
     /** 매장 수정(C-4) 때 내 매장을 뺀 나머지에서 번호 중복 확인 (폐업 매장 제외) */

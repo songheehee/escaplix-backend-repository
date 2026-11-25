@@ -118,11 +118,11 @@ CREATE TABLE store (
     phone                VARCHAR2(20)   NOT NULL,
     website_url          VARCHAR2(500)  NOT NULL,             -- 매장 웹사이트. http(s):// 로 시작 (서버 검사)
     hours                VARCHAR2(150)  NOT NULL,             -- 영업시간 한 줄 "10:00 ~ 23:00 (연중무휴)"
-    intro                VARCHAR2(600)  NOT NULL,             -- 매장 소개 한글 200자
+    intro                VARCHAR2(600),                       -- 매장 소개 한글 200자. 선택 (없으면 NULL)
     photo_url            VARCHAR2(500),                       -- 매장 사진 공개 주소 "/uploads/stores/uuid.jpg". 없으면 NULL
     lat                  NUMBER(9,6),                         -- 지도 (선택 기능)
     lng                  NUMBER(9,6),
-    biz_place_no         VARCHAR2(12)   NOT NULL,             -- 사업장 등록번호
+    biz_place_no         VARCHAR2(14)   NOT NULL,             -- 사업장 관리번호 000-00-00000-0 (11자리). 예전 더미는 10자리
     biz_place_file_path  VARCHAR2(500),                       -- 사업장등록증 경로, 비공개 폴더
     status               VARCHAR2(10)   DEFAULT 'PENDING' NOT NULL,
     reject_reason        VARCHAR2(900),                       -- 반려 사유 (관리자 작성, 한글 300자)
@@ -136,7 +136,7 @@ CREATE TABLE store (
     CONSTRAINT store_reject_ck    CHECK (status <> 'REJECTED' OR reject_reason IS NOT NULL),
     CONSTRAINT store_approved_ck  CHECK (status <> 'APPROVED' OR approved_at IS NOT NULL)
 );
--- 사업장 등록번호는 폐업 안 한 매장끼리만 겹치면 안 됨 (폐업 매장은 NULL 이라 안 셈 → 같은 번호로 새로 등록 가능)
+-- 사업장 관리번호는 폐업 안 한 매장끼리만 겹치면 안 됨 (폐업 매장은 NULL 이라 안 셈 → 같은 번호로 새로 등록 가능)
 CREATE UNIQUE INDEX store_biz_place_uk ON store (CASE WHEN status <> 'CLOSED' THEN biz_place_no END);
 
 -- 6. 테마 (등록·수정 → PENDING → 승인 OPEN / 반려 REJECTED + 사유, 운영 종료 CLOSED)

@@ -39,9 +39,9 @@ public class OwnerStoreServiceImpl implements OwnerStoreService {
 
     @Override
     public List<OwnerStoreItem> getMyStores(LoginMember login) {
-        // 사장: owner = 나, 관리자: 승인된 매장 전체 (매장 관리. 대기·반려는 승인 요청 화면에서)
+        // 사장: owner = 나, 관리자: 승인된 매장 + 폐업 매장 (매장 관리. 대기·반려는 승인 요청 화면에서)
         List<Store> stores = login.is(Role.ADMIN)
-                ? storeRepository.findByStatusOrderByCreatedAtDesc(StoreStatus.APPROVED)
+                ? storeRepository.findByStatusInOrderByCreatedAtDesc(List.of(StoreStatus.APPROVED, StoreStatus.CLOSED))
                 : storeRepository.findByOwner_MemberIdOrderByCreatedAtDesc(login.memberId());
         return stores.stream().map(this::toItem).toList();
     }

@@ -9,6 +9,7 @@ public record MyPartyItem(
         String title,
         Long themeId,
         String themeTitle,
+        boolean themeOpen,      // 테마 운영 중 + 매장 승인. false = 운영 종료·폐업
         PartyStatus status,
         PartyRole myRole,
         int currentPeople,

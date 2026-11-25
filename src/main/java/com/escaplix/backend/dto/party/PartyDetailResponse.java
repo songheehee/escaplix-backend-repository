@@ -19,7 +19,8 @@ public record PartyDetailResponse(
         PartyRole myRole
 ) {
 
-    public record ThemeBrief(Long themeId, String title, String storeName, int playMinutes) {
+    /** open = 테마 운영 중 + 매장 승인 (false 면 운영 종료·폐업 → 방에 안내, 테마 링크 없음) */
+    public record ThemeBrief(Long themeId, String title, String storeName, int playMinutes, boolean open) {
     }
 
     /** JOINED 인 사람만 */

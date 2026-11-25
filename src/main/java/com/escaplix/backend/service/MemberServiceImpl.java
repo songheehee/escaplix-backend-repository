@@ -86,8 +86,8 @@ public class MemberServiceImpl implements MemberService {
     }
 
     // ---------------------------------------------------------------- 비밀번호 재설정 (아이디 + 이메일 인증)
-    //   인증 기록은 "아이디 이메일" 한 쌍으로 센다. 회원이 맞는지와 상관없이 같은 규칙(60초·5번·5분)이 걸려서
-    //   응답만 보고는 아이디·이메일이 맞는지 알 수 없다. 메일은 맞을 때만 (기다리지 않고) 보낸다
+    //   인증 기록은 "아이디 이메일" 한 쌍으로 센다 (60초·5번·5분)
+    //   아이디·이메일 조합이 틀리면 400 "아이디 또는 이메일이 올바르지 않습니다." (11/25 변경. 맞을 때만 인증번호 발급·메일)
 
     private static final String RESET_NOT_VERIFIED = "이메일 인증을 먼저 해 주세요.";
 
@@ -96,15 +96,17 @@ public class MemberServiceImpl implements MemberService {
     public void sendPasswordResetCode(PasswordResetCodeRequest req) {
         String loginId = req.loginId().trim();
         String email = normalizeEmail(req.email());
-        String code = emailCodes.issue(Purpose.PASSWORD_RESET, resetKey(loginId, email));   // 60초 안에 또 → 429 (맞든 틀리든)
-        if (findByLoginIdAndEmail(loginId, email) != null) {
-            mailer.sendLater(email, "[Escaplix] 비밀번호 재설정 인증번호",
-                    "Escaplix 비밀번호 재설정 인증번호입니다.\n\n"
-                    + "아이디: " + loginId + "\n"
-                    + "인증번호: " + code + "\n\n"
-                    + "5분 안에 비밀번호 찾기 화면에 입력해 주세요.\n"
-                    + "본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다. 비밀번호는 바뀌지 않아요.");
+        // 아이디·이메일 조합이 틀리면 바로 알려 줌 (화면 요청 11/25. 예전에는 맞든 틀리든 똑같이 답했음)
+        if (findByLoginIdAndEmail(loginId, email) == null) {
+            throw ApiException.badRequest("아이디 또는 이메일이 올바르지 않습니다.");
         }
+        String code = emailCodes.issue(Purpose.PASSWORD_RESET, resetKey(loginId, email));   // 60초 안에 또 → 429
+        mailer.sendLater(email, "[Escaplix] 비밀번호 재설정 인증번호",
+                "Escaplix 비밀번호 재설정 인증번호입니다.\n\n"
+                + "아이디: " + loginId + "\n"
+                + "인증번호: " + code + "\n\n"
+                + "5분 안에 비밀번호 찾기 화면에 입력해 주세요.\n"
+                + "본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다. 비밀번호는 바뀌지 않아요.");
     }
 
     @Override
@@ -194,13 +196,15 @@ public class MemberServiceImpl implements MemberService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void findLoginId(EmailCodeRequest req) {
         String email = normalizeEmail(req.email());
+        // 가입한 계정이 없으면 바로 알려 줌 (화면 요청 11/25. 예전에는 있든 없든 똑같이 답했음)
+        Member found = memberRepository.findByEmail(email)
+                .orElseThrow(() -> ApiException.notFound("입력한 이메일로 가입한 계정이 없습니다."));
         emailCodes.throttle(Purpose.FIND_ID, email);
-        memberRepository.findByEmail(email).ifPresent(m ->
-                mailer.sendLater(email, "[Escaplix] 아이디 안내",
-                        "이 이메일로 가입한 Escaplix 아이디입니다.\n\n"
-                        + "아이디: " + m.getLoginId() + "\n\n"
-                        + "비밀번호가 기억나지 않으면 로그인 화면의 \"비밀번호를 잊으셨나요?\"에서 바꿀 수 있어요.\n"
-                        + "본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다."));
+        mailer.sendLater(email, "[Escaplix] 아이디 안내",
+                "이 이메일로 가입한 Escaplix 아이디입니다.\n\n"
+                + "아이디: " + found.getLoginId() + "\n\n"
+                + "비밀번호가 기억나지 않으면 로그인 화면의 \"비밀번호를 잊으셨나요?\"에서 바꿀 수 있어요.\n"
+                + "본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다.");
     }
 
     // ---------------------------------------------------------------- 내 이메일 등록·변경 (로그인)

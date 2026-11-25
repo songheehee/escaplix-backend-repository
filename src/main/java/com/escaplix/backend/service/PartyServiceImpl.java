@@ -91,7 +91,7 @@ public class PartyServiceImpl implements PartyService {
 
         Theme t = party.getTheme();
         return new PartyDetailResponse(party.getPartyId(), party.getTitle(), party.getIntro(), shownStatus(party, LocalDateTime.now()),
-                new PartyDetailResponse.ThemeBrief(t.getThemeId(), t.getTitle(), t.getStore().getName(), t.getPlayMinutes()),
+                new PartyDetailResponse.ThemeBrief(t.getThemeId(), t.getTitle(), t.getStore().getName(), t.getPlayMinutes(), themeOpen(t)),
                 party.getPlayAt(), party.getDeadlineAt(), party.getMaxPeople(), members.size(), members,
                 leaderId.equals(login.memberId()) ? PartyRole.LEADER : PartyRole.MEMBER);
     }
@@ -161,6 +161,9 @@ public class PartyServiceImpl implements PartyService {
 
         if (party.getStatus() == PartyStatus.CLOSED || !party.getDeadlineAt().isAfter(LocalDateTime.now())) {
             throw ApiException.conflict("모집이 끝난 파티입니다.");
+        }
+        if (!themeOpen(party.getTheme())) {
+            throw ApiException.conflict("운영이 종료된 테마라 참여할 수 없습니다.");
         }
         long count = countJoined(partyId);
         if (party.getStatus() == PartyStatus.FULL || count >= party.getMaxPeople()) {
@@ -309,7 +312,7 @@ public class PartyServiceImpl implements PartyService {
             PartyMessage last = lasts.get(p.getPartyId());
             MyPartyItem.LastMessage lastMessage = last == null ? null
                     : new MyPartyItem.LastMessage(last.getMember().getNickname(), last.getMsgType(), last.getContent(), last.getCreatedAt());
-            return new MyPartyItem(p.getPartyId(), p.getTitle(), p.getTheme().getThemeId(), p.getTheme().getTitle(),
+            return new MyPartyItem(p.getPartyId(), p.getTitle(), p.getTheme().getThemeId(), p.getTheme().getTitle(), themeOpen(p.getTheme()),
                     shownStatus(p, now), p.getLeader().getMemberId().equals(me) ? PartyRole.LEADER : PartyRole.MEMBER,
                     counts.getOrDefault(p.getPartyId(), 0), p.getMaxPeople(), p.getPlayAt(),
                     p.getPlayAt().isBefore(now),   // ended: 끝난 파티 → 후기 쓰기 버튼
@@ -318,6 +321,11 @@ public class PartyServiceImpl implements PartyService {
     }
 
     // ================================================================ 도우미
+
+    /** 손님에게 공개된 테마인지 (테마 OPEN + 매장 APPROVED). 운영 종료·폐업이면 false. 파티 만들기와 같은 기준 */
+    private static boolean themeOpen(Theme t) {
+        return t.getStatus() == ThemeStatus.OPEN && t.getStore().getStatus() == StoreStatus.APPROVED;
+    }
 
     /** PARTY 행을 잠그고 읽는다 (SELECT ... FOR UPDATE). 없거나 DELETED 면 404 */
     private Party lockParty(Long partyId) {

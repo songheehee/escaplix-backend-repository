@@ -38,11 +38,15 @@ public class PartyBrowseRepository {
     public List<Party> findRecruiting(LocalDateTime now, String keywordLike, Collection<Long> genreIds, Long themeId,
                                       String area, String region) {
         StringBuilder jpql = new StringBuilder(
-                "select p from Party p join fetch p.theme t join fetch t.store s join fetch p.leader where " + VISIBLE);
+                "select p from Party p join fetch p.theme t join fetch t.store s join fetch p.leader where " + VISIBLE
+                        // 운영 종료 테마 · 폐업(승인 아닌) 매장의 파티는 목록에서 뺌 (요청마다 지금 상태로 판단)
+                        + " and t.status = :themeOpen and s.status = :storeApproved");
         Map<String, Object> params = new HashMap<>();
         params.put("recruiting", PartyStatus.RECRUITING);
         params.put("full", PartyStatus.FULL);
         params.put("now", now);
+        params.put("themeOpen", ThemeStatus.OPEN);
+        params.put("storeApproved", StoreStatus.APPROVED);
 
         if (themeId != null) {
             jpql.append(" and t.themeId = :themeId");
@@ -111,7 +115,7 @@ public class PartyBrowseRepository {
 
     /** 내가 JOINED 인 파티 (삭제된 것 제외). 테마까지 한 번에 */
     public List<Party> findMyParties(Long memberId) {
-        return em.createQuery("select p from Party p join fetch p.theme where p.partyId in (" + MY_PARTY_IDS + ")", Party.class)
+        return em.createQuery("select p from Party p join fetch p.theme t join fetch t.store where p.partyId in (" + MY_PARTY_IDS + ")", Party.class)
                 .setParameter("me", memberId)
                 .setParameter("joined", PartyMemberStatus.JOINED)
                 .setParameter("deleted", PartyStatus.DELETED)

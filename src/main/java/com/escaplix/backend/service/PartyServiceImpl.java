@@ -64,7 +64,7 @@ public class PartyServiceImpl implements PartyService {
             Theme t = p.getTheme();
             PartyMemberStatus my = mine.get(p.getPartyId());
             return new PartyListItem(p.getPartyId(), p.getTitle(), p.getIntro(),
-                    t.getThemeId(), t.getTitle(), t.getStore().getName(),
+                    t.getThemeId(), t.getTitle(), t.getPosterUrl(), t.getStore().getName(),
                     genres.getOrDefault(t.getThemeId(), List.of()),
                     p.getPlayAt(), p.getDeadlineAt(),
                     counts.getOrDefault(p.getPartyId(), 0), p.getMaxPeople(),

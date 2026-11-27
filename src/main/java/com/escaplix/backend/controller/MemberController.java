@@ -4,6 +4,8 @@ import com.escaplix.backend.common.*;
 import com.escaplix.backend.common.auth.*;
 import com.escaplix.backend.dto.member.*;
 import com.escaplix.backend.service.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class MemberController {
 
     private final MemberService memberService;
+    private final RefreshTokenService refreshTokens;
 
     /** A-1 손님 회원가입 · 공개 · 201 */
     @PostMapping("/api/members/user")
@@ -120,10 +123,12 @@ public class MemberController {
         return memberService.checkBizNo(bizNo);
     }
 
-    /** A-6 로그인 · 공개 · 200 */
+    /** A-6 로그인 · 공개 · 200. Access Token 은 본문, Refresh Token 은 HttpOnly 쿠키로 (AuthController 참고) */
     @PostMapping("/api/auth/login")
-    public LoginResponse login(@Valid @RequestBody LoginRequest req) {
-        return memberService.login(req);
+    public LoginResponse login(@Valid @RequestBody LoginRequest req, HttpServletRequest httpReq, HttpServletResponse httpRes) {
+        LoginResponse res = memberService.login(req);
+        RefreshCookie.write(httpReq, httpRes, refreshTokens.issue(res.memberId()));
+        return res;
     }
 
     /** A-7 내 정보 · 로그인 · 200 */
@@ -144,7 +149,9 @@ public class MemberController {
     @PutMapping("/api/members/me/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Auth
-    public void updatePassword(LoginMember login, @Valid @RequestBody PasswordUpdateRequest req) {
-        memberService.updatePassword(login, req);
+    public void updatePassword(LoginMember login, @Valid @RequestBody PasswordUpdateRequest req,
+                               HttpServletRequest httpReq, HttpServletResponse httpRes) {
+        memberService.updatePassword(login, req);   // 다른 기기의 로그인 유지는 모두 끊김
+        RefreshCookie.write(httpReq, httpRes, refreshTokens.issue(login.memberId()));   // 지금 쓰는 브라우저는 계속 로그인
     }
 }

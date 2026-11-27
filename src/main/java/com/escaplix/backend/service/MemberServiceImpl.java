@@ -49,6 +49,7 @@ public class MemberServiceImpl implements MemberService {
     private final EmailCodeStore emailCodes;
     private final WishlistRepository wishlistRepository;
     private final PartyService partyService;
+    private final RefreshTokenService refreshTokens;   // 비밀번호 변경·재설정·탈퇴 → 모든 기기 로그아웃
 
     /** 형식 규칙: 가입 DTO(@Pattern·@Size)와 같은 규칙. 중복 확인(A-3~5)은 쿼리 파라미터라 여기서 검사 */
     private static final Pattern LOGIN_ID = Pattern.compile("^[a-z0-9]{4,20}$");
@@ -130,6 +131,7 @@ public class MemberServiceImpl implements MemberService {
             throw ApiException.badRequest(RESET_NOT_VERIFIED);
         }
         member.setPassword(passwordEncoder.encode(req.newPassword()));
+        refreshTokens.revokeAll(member.getMemberId());   // 비밀번호를 잊어 바꿨으면 다른 곳의 로그인 유지도 끊음
         // 다 바꾸면 인증 기록을 지운다 (같은 인증으로 또 못 바꾸게)
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
@@ -182,6 +184,7 @@ public class MemberServiceImpl implements MemberService {
         me.setBizFilePath(null);
         me.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));   // 아무도 모르는 비밀번호
         me.setWithdrawnAt(java.time.LocalDateTime.now());
+        refreshTokens.revokeAll(me.getMemberId());   // 로그인 유지 토큰도 전부 지움
         memberRepository.flush();
         // 4) 사업자등록증 파일은 탈퇴가 커밋된 뒤에 지움 (실패해서 되돌아가면 파일은 그대로)
         if (bizFile != null) {
@@ -487,6 +490,7 @@ public class MemberServiceImpl implements MemberService {
             throw ApiException.badRequest("지금 비밀번호와 다른 비밀번호를 입력해 주세요.");
         }
         member.setPassword(passwordEncoder.encode(req.newPassword()));
+        refreshTokens.revokeAll(member.getMemberId());
     }
 
     @Override

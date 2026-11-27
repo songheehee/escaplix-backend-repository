@@ -13,6 +13,7 @@ DROP TABLE party_member;
 DROP TABLE party;
 DROP TABLE report;                -- 신고 기능은 뺌. 예전 DB 에 남은 테이블 정리용
 DROP TABLE review;
+DROP TABLE refresh_token;
 DROP TABLE wishlist;
 DROP TABLE member_genre;
 DROP TABLE time_slot;
@@ -35,6 +36,7 @@ DROP SEQUENCE sq_area;
 DROP SEQUENCE sq_theme;
 DROP SEQUENCE sq_theme_genre;
 DROP SEQUENCE sq_time_slot;
+DROP SEQUENCE sq_refresh_token;
 DROP SEQUENCE sq_wishlist;
 DROP SEQUENCE sq_review;
 DROP SEQUENCE sq_report;          -- 신고 기능은 뺌. 예전 DB 정리용
@@ -298,6 +300,21 @@ CREATE TABLE party_message (
 );
 
 
+-- 15-1. 로그인 유지 토큰 (Refresh Token). 원문은 브라우저 쿠키(HttpOnly)에만, 여기엔 SHA-256 해시(64자)만
+--   쓸 때마다 지우고 새로 넣음. 로그아웃·비밀번호 변경·탈퇴하면 지움
+CREATE TABLE refresh_token (
+    token_id    NUMBER        NOT NULL,
+    member_id   NUMBER        NOT NULL,
+    token_hash  VARCHAR2(64)  NOT NULL,
+    expires_at  DATE          NOT NULL,
+    created_at  DATE          DEFAULT SYSDATE NOT NULL,
+    CONSTRAINT refresh_token_pk        PRIMARY KEY (token_id),
+    CONSTRAINT refresh_token_member_fk FOREIGN KEY (member_id) REFERENCES member(member_id),
+    CONSTRAINT refresh_token_hash_uk   UNIQUE (token_hash)
+);
+CREATE INDEX refresh_token_member_ix ON refresh_token (member_id);
+
+
 -- 16. 시퀀스 (holiday 는 날짜가 PK 라 시퀀스 없음)
 CREATE SEQUENCE sq_member;
 CREATE SEQUENCE sq_genre;
@@ -313,6 +330,7 @@ CREATE SEQUENCE sq_member_genre;
 CREATE SEQUENCE sq_party;
 CREATE SEQUENCE sq_party_member;
 CREATE SEQUENCE sq_party_message;
+CREATE SEQUENCE sq_refresh_token;
 
 
 -- 17. 트리거 (SQL Developer 는 블록 끝 "/" 까지 F5 로 실행)

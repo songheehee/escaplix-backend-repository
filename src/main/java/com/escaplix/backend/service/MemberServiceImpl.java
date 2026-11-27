@@ -39,6 +39,7 @@ public class MemberServiceImpl implements MemberService {
 
     private final MemberRepository memberRepository;
     private final StoreRepository storeRepository;
+    private final ThemeRepository themeRepository;   // 사장 탈퇴: 승인 대기·반려 매장의 테마도 같이 운영 종료
     private final MemberGenreRepository memberGenreRepository;
     private final GenreRepository genreRepository;
     private final PasswordEncoder passwordEncoder;
@@ -153,8 +154,18 @@ public class MemberServiceImpl implements MemberService {
         if (!passwordEncoder.matches(req.password(), me.getPassword())) {
             throw ApiException.badRequest("비밀번호가 맞지 않아요.");
         }
-        if (me.getRole() == Role.OWNER && storeRepository.countByOwner_MemberId(me.getMemberId()) > 0) {
-            throw ApiException.conflict("매장이 남아 있어서 탈퇴할 수 없어요. 매장을 먼저 정리해 주세요.");
+        // 사장: 손님에게 공개 중인(승인된) 매장이 있으면 막음 → 먼저 폐업해야 함
+        //   승인 대기·반려 매장은 공개된 적이 없어서 탈퇴할 때 같이 폐업 처리 (폐업은 승인된 매장만 직접 할 수 있어서 이렇게 안 하면 영영 탈퇴 못 함)
+        if (me.getRole() == Role.OWNER) {
+            if (storeRepository.countByOwner_MemberIdAndStatus(me.getMemberId(), StoreStatus.APPROVED) > 0) {
+                throw ApiException.conflict("운영 중인 매장이 있어서 탈퇴할 수 없어요. 매장을 먼저 폐업해 주세요.");
+            }
+            for (Store s : storeRepository.findByOwner_MemberIdOrderByCreatedAtDesc(me.getMemberId())) {
+                if (s.getStatus() == StoreStatus.CLOSED) continue;
+                s.setStatus(StoreStatus.CLOSED);
+                themeRepository.findByStore_StoreIdOrderByCreatedAtDesc(s.getStoreId())
+                        .forEach(t -> t.setStatus(ThemeStatus.CLOSED));
+            }
         }
 
         // 1) 안 끝난 파티: 방장이면 삭제, 참여자면 나가기. 끝난 파티 기록은 남김

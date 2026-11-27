@@ -120,6 +120,7 @@ public class AdminServiceImpl implements AdminService {
                 .map(t -> new AdminThemeItem(
                         t.getThemeId(),
                         t.getTitle(),
+                        t.getStore().getStoreId(),
                         t.getStore().getName(),
                         support.genreNames(t.getThemeId()),
                         t.getPosterUrl(),

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public record AdminThemeItem(
         Long themeId,
         String title,
+        Long storeId,          // 매장 관리 검색: 테마 이름으로 그 매장 찾기
         String storeName,
         List<String> genres,
         String posterUrl,

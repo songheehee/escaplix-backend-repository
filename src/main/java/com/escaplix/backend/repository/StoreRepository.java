@@ -39,5 +39,6 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
 
     long countByStatus(StoreStatus status);
 
-    long countByOwner_MemberId(Long ownerId);
+    /** 사장 탈퇴 검사: 승인된(공개 중) 매장 수. 승인 대기·반려는 탈퇴할 때 같이 폐업, 폐업은 이미 정리됨 */
+    long countByOwner_MemberIdAndStatus(Long ownerId, StoreStatus status);
 }

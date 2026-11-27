@@ -34,7 +34,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/api/**")
                 .allowedOrigins(allowedOrigins)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*");
+                .allowedHeaders("*")
+                .allowCredentials(true);   // Refresh Token 쿠키 주고받기 (origin 을 * 로 두면 안 됨, 위 목록만)
     }
 
     @Override

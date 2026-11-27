@@ -22,7 +22,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokens;
 
     /**
-     * Access Token 재발급 · 공개(쿠키) · 200 (본문은 로그인 응답과 같음)
+     * A-32 Access Token 재발급 · 공개(쿠키) · 200 (본문은 로그인 응답과 같음)
      *   쿠키 없음·만료·이미 쓴 토큰·탈퇴 회원 401. 실패하면 쿠키도 지운다
      *   (예외를 던지지 않고 여기서 401 을 돌려줌 → 쿠키 지우는 헤더가 확실히 나감)
      */
@@ -39,7 +39,7 @@ public class AuthController {
         }
     }
 
-    /** 로그아웃 · 공개(쿠키) · 204. 이 브라우저의 Refresh Token 을 지운다 (Access Token 은 프런트가 지움) */
+    /** A-33 로그아웃 · 공개(쿠키) · 204. 이 브라우저의 Refresh Token 을 지운다 (Access Token 은 프런트가 지움) */
     @PostMapping("/api/auth/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(@CookieValue(value = RefreshCookie.NAME, required = false) String token,

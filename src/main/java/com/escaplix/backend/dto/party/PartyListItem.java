@@ -11,6 +11,8 @@ public record PartyListItem(
         String intro,
         Long themeId,
         String themeTitle,
+        /** 카드 왼쪽 작은 포스터 (없으면 null) */
+        String posterUrl,
         String storeName,
         List<String> genres,
         LocalDateTime playAt,

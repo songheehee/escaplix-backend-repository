@@ -5,6 +5,7 @@ import com.escaplix.backend.common.auth.LoginMemberArgumentResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.CacheControl;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -13,6 +14,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 @RequiredArgsConstructor
@@ -60,8 +62,11 @@ public class WebConfig implements WebMvcConfigurer {
             if (!location.endsWith("/")) {
                 location += "/";
             }
+            // 사진은 7일 동안 브라우저에 저장해 둠 → 다시 열 때 바로 뜸
+            //   (올린 사진은 UUID 이름이라 바꾸면 주소도 바뀌어서 예전 사진이 남지 않음)
             registry.addResourceHandler("/uploads/" + folder + "/**")
-                    .addResourceLocations(location, "classpath:/uploads/" + folder + "/");
+                    .addResourceLocations(location, "classpath:/uploads/" + folder + "/")
+                    .setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic());
         }
     }
 }
